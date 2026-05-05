@@ -2,7 +2,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pdfParser", "pdfParser.csproj", "{CB2A818F-DCC4-3E0B-DD68-1ED586CD1CFA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pdfParser2", "pdfParser2.csproj", "{CB2A818F-DCC4-3E0B-DD68-1ED586CD1CFA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

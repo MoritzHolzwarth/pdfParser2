@@ -149,7 +149,7 @@ namespace pdfParserByMH
             double headerXPos = getTextLineXPosValue(headerX, mediaBox, arrHeaderTextWidths[0], xDistance, rotationApplied);
             double footerXPos = getTextLineXPosValue(footerX, mediaBox, arrFooterTextWidths[0], xDistance, rotationApplied);
             double headerYPos = mediaBox[1] + mediaBox[3] - yDistance;
-            double footerYPos = mediaBox[1] + yDistance;
+            double footerYPos = mediaBox[1] + yDistance + (rotationApplied? (mediaBox[3] - mediaBox[2]): 0);
             double[] header_relXPos = getTextLinesRelativeXPosValues(headerX, arrHeaderTextWidths, arrHeaderTextWidths[0]);
             double[] footer_relXPos = getTextLinesRelativeXPosValues(footerX, arrFooterTextWidths, arrFooterTextWidths[0]);
             
@@ -190,7 +190,7 @@ namespace pdfParserByMH
             {
                 case PageXPosition.Left:
                     return mediaBox[0] + xBoundary;
-                case PageXPosition.Middle: 
+                case PageXPosition.Middle:
                     return 0.5*(-textWidth + (rotationApplied? mediaBox[3] + mediaBox[1]: mediaBox[2] + mediaBox[0]));
                 case PageXPosition.Right:
                     return -textWidth - xBoundary + (rotationApplied? mediaBox[3] + mediaBox[1]: mediaBox[2] + mediaBox[0]);

@@ -434,11 +434,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\morit\\Desktop\\C#\\pdfParserExecutable\\pdfParser.csproj",
+      "projectUniqueName": "C:\\Users\\morit\\Desktop\\C#\\pdfParser2\\pdfParser2.csproj",
       "projectName": "pdfParser2",
-      "projectPath": "C:\\Users\\morit\\Desktop\\C#\\pdfParserExecutable\\pdfParser.csproj",
+      "projectPath": "C:\\Users\\morit\\Desktop\\C#\\pdfParser2\\pdfParser2.csproj",
       "packagesPath": "C:\\Users\\morit\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\morit\\Desktop\\C#\\pdfParserExecutable\\obj\\",
+      "outputPath": "C:\\Users\\morit\\Desktop\\C#\\pdfParser2\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\morit\\AppData\\Roaming\\NuGet\\NuGet.Config"
