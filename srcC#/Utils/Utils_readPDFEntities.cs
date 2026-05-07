@@ -256,7 +256,8 @@ namespace pdfParserByMH
                     val = readPDFEntity(ref span);
                     if(pdfdict.containsKey(key.value))
                     {
-                        System.Console.Error.WriteLine($"Warning in Utils.readPDFDictionary(): Multiple entries with key {key.value} found! Using only the last one.");
+                        //System.Console.Error.WriteLine($"Warning in Utils.readPDFDictionary(): Multiple entries with key {key.value} found! Using only the last one."); > C# 5
+                        System.Console.Error.WriteLine(string.Format("Warning in Utils.readPDFDictionary(): Multiple entries with key {0} found! Using only the last one.", key.value));
                         pdfdict.set(key.value,val);
                     }
                     else
@@ -285,8 +286,9 @@ namespace pdfParserByMH
             }
             span = span.Slice(6); //move past 'stream' keyword
             int dataLen;
-            if(dict.get("/Length") is pdfInteger lenPDFInt)
+            if(dict.get("/Length") is pdfInteger)
             {
+                pdfInteger lenPDFInt = (pdfInteger)dict.get("/Length");
                 dataLen = lenPDFInt.value;
             }
             else if(xref != null)

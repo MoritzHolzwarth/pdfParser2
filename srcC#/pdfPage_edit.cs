@@ -31,11 +31,12 @@ namespace pdfParserByMH
         private string getFreeFontToken(string[] arrTokens)
         {
             int i = 1;
-            string token = $"/F{i}";
+            //string token = $"/F{i}"; > C# 5
+            string token = "/F" + i.ToString();
             while(arrTokens.Contains(token))
             {
                 i++;
-                token = $"/F{i}";
+                token = "/F" + i.ToString();
             }
             return token;
         }
@@ -47,8 +48,9 @@ namespace pdfParserByMH
                 pdfEntity contentEnt = dictionary.getResolved("/Contents");  //The usual procedure: dictionary.get() might just return an obRef, 
                                                                             //which may just lead to another obRef, which must eventually lead to some not-obRef.
                                                                             //via .getResolved() we get that final non-obRef entity directly.
-                if(contentEnt is pdfArray contArr) //That content-Entity should usually be a pdfArray of obRefs, each leading so some contnet-pdfStream
+                if(contentEnt is pdfArray) //That content-Entity should usually be a pdfArray of obRefs, each leading so some contnet-pdfStream
                 {
+                    pdfArray contArr = (pdfArray)contentEnt;
                     if(atBeginning)
                     {
                         contArr.InsertAtBeginning(streamObRef, document.xref); //we add the new streamObRef to the pdfArray, and also pass the document's xrefCollection (i.e. xref)
@@ -140,8 +142,8 @@ namespace pdfParserByMH
                                         bool makeVertical =false, bool makeHorizontal =false, int xDistance = 20, int yDistance = 20)
         {
             bool rotationApplied = enforcePageOriantation(makeVertical, makeHorizontal);
-            (string[], double[]) formatHeaderResult = formatStringForPDFStream(headerText, fontName, fontSize);
-            (string[], double[]) formatFooterResult = formatStringForPDFStream(footerText, fontName, fontSize);
+            ValueTuple<string[], double[]> formatHeaderResult = formatStringForPDFStream(headerText, fontName, fontSize);
+            ValueTuple<string[], double[]> formatFooterResult = formatStringForPDFStream(footerText, fontName, fontSize);
             string[] arrHeaderText = formatHeaderResult.Item1;
             double[] arrHeaderTextWidths = formatHeaderResult.Item2;
             string[] arrFooterText = formatFooterResult.Item1;
@@ -155,7 +157,8 @@ namespace pdfParserByMH
             
             string headerCommand = getTextBlockStreamCommand(arrHeaderText, headerXPos, header_relXPos, headerYPos, fontSize, fontToken, fontColor, rotationApplied);
             string footerCommand = getTextBlockStreamCommand(arrFooterText, footerXPos, footer_relXPos, footerYPos, fontSize, fontToken, fontColor, rotationApplied);
-            string fullCommand = $"\n/HeaderAndFooterByMH BMC\n{headerCommand}\n{footerCommand}\nEMC\n";
+            //string fullCommand = $"\n/HeaderAndFooterByMH BMC\n{headerCommand}\n{footerCommand}\nEMC\n"; > C# 5
+            string fullCommand = string.Format("\n/HeaderAndFooterByMH BMC\n{0}\n{1}\nEMC\n", headerCommand, footerCommand);
             
             pdfObjectReference headerFooterStreamObRef = document.createNewStreamFromUncompressedData(Utils.stringToBytes(fullCommand));
             addObRefToContent(headerFooterStreamObRef, false); //'false' meand 'add at end of /Contents'
@@ -164,23 +167,32 @@ namespace pdfParserByMH
         private string getTextBlockStreamCommand(string[] arrText, double xpos, double[] rel_xpos, double ypos, int fontSize, string fontToken, double[] fontColor, bool rotate)
         {
             int lineHeight = System.Convert.ToInt32(fontSize*1.2);
-            string cmCommand = rotate? $"0 1 -1 0 {mediaBox[3]} 0 cm": "";
-            string rgCommand = $"{fontColor[0]} {fontColor[1]} {fontColor[2]} rg";
-            string tfCommand = $"{fontToken} {fontSize} Tf";
-            string tlCommand = $"{lineHeight} TL";
+            //string cmCommand = rotate? $"0 1 -1 0 {mediaBox[3]} 0 cm": ""; > C# 5
+            string cmCommand = rotate? string.Format("0 1 -1 0 {0} 0 cm", mediaBox[3]): "";
+            //string rgCommand = $"{fontColor[0]} {fontColor[1]} {fontColor[2]} rg"; > C# 5
+            string rgCommand = string.Format("{0} {1} {2} rg", fontColor[0], fontColor[1], fontColor[2]);
+            //string tfCommand = $"{fontToken} {fontSize} Tf"; > C# 5
+            string tfCommand = string.Format("{0} {1} Tf", fontToken, fontSize);
+            //string tlCommand = $"{lineHeight} TL"; > C# 5
+            string tlCommand = string.Format("{0} TL", lineHeight); 
             System.Text.StringBuilder strBuild = new System.Text.StringBuilder();
-            strBuild.Append($"{xpos + rel_xpos[0]} {ypos} Td");
-            strBuild.Append($"\n{arrText[0]} Tj");
+            //strBuild.Append($"{xpos + rel_xpos[0]} {ypos} Td");
+            strBuild.Append(string.Format("{0} {1} Td", xpos + rel_xpos[0], ypos));
+            //strBuild.Append($"\n{arrText[0]} Tj"); > C# 5
+            strBuild.Append(string.Format("\n{0} Tj", arrText[0]));
             if(arrText.Length > 1)
             {
                 for(int i=1; i<arrText.Length; i++)
                 {
-                    strBuild.Append($"\n{+rel_xpos[i]} {-lineHeight} Td");
-                    strBuild.Append($"\n{arrText[i]} Tj");
+                    //strBuild.Append($"\n{+rel_xpos[i]} {-lineHeight} Td"); > C# 5
+                    strBuild.Append(string.Format("\n+{0} -{1} Td", rel_xpos[i], lineHeight));
+                    //strBuild.Append($"\n{arrText[i]} Tj"); > C# 5
+                    strBuild.Append(string.Format("\n{0} Tj", arrText[i]));
                 }
             }
             string tdtjCommand = strBuild.ToString();
-            string fullCommand = $"q\n{cmCommand}\n BT \n{rgCommand}\n{tfCommand}\n{tlCommand}\n{tdtjCommand}\n ET \nQ";
+            //string fullCommand = $"q\n{cmCommand}\n BT \n{rgCommand}\n{tfCommand}\n{tlCommand}\n{tdtjCommand}\n ET \nQ"; > C# 5
+            string fullCommand = string.Format("q\n{0}\n BT \n{1}\n{2}\n{3}\n{4}\n ET \nQ", cmCommand, rgCommand, tfCommand, tlCommand, tdtjCommand);
             return fullCommand;
         }
 
@@ -195,7 +207,8 @@ namespace pdfParserByMH
                 case PageXPosition.Right:
                     return -textWidth - xBoundary + (rotationApplied? mediaBox[3] + mediaBox[1]: mediaBox[2] + mediaBox[0]);
                 default:
-                    throw new System.Exception($"Error in pdfPage.getHeaderFooterXPositionValue(): unknown PageXPosition Value {xpos}!");
+                    //throw new System.Exception($"Error in pdfPage.getHeaderFooterXPositionValue(): unknown PageXPosition Value {xpos}!"); > C# 5
+                    throw new System.Exception(string.Format("Error in pdfPage.getHeaderFooterXPositionValue(): unknown PageXPosition Value {0}!", xpos));
             }
         }
 
@@ -210,7 +223,8 @@ namespace pdfParserByMH
                 case PageXPosition.Right:
                     return textWidths.Select(s => referenceWidth - s).ToArray();
                 default:
-                    throw new System.Exception($"Error in pdfPage.getHeaderFooterRelativeXPosValues(): unknown PageXPosition Value {xpos}!");
+                    //throw new System.Exception($"Error in pdfPage.getHeaderFooterRelativeXPosValues(): unknown PageXPosition Value {xpos}!"); > C# 5
+                    throw new System.Exception(string.Format("Error in pdfPage.getHeaderFooterRelativeXPosValues(): unknown PageXPosition Value {0}!", xpos));
             }
         }
 
@@ -229,7 +243,7 @@ namespace pdfParserByMH
 
 
 
-        public bool removeHeaderAndFooter()
+        public bool removeHeaderAndFooter()  //Never used this Function so far. Dont know if it works correctly
         {
             byte[] arrContiguosData = new byte[0];
             byte[][] arrDatasets = new byte[0][];
@@ -243,7 +257,8 @@ namespace pdfParserByMH
             }
             var matches = reg.Matches(fullPageCode);
             if(matches.Count > 1)
-                throw new System.Exception($"Error in pdfPage.undo_Stempeln(): more than one Stempel marker found in page {this.number}");
+                //throw new System.Exception($"Error in pdfPage.undo_Stempeln(): more than one Stempel marker found in page {this.number}");
+                throw new System.Exception(string.Format("Error in pdfPage.undo_Stempeln(): more than one Stempel marker found in page {0}", this.number));
             int markedContStartPos_global = matches[0].Index;
             int posBehindMarkedCont_global = markedContStartPos_global + matches[0].Length + 1; //Note: +1 (Behind)
             int startStreamIndex = -1;
@@ -317,10 +332,10 @@ namespace pdfParserByMH
             }
         }
 
-        public (string[], double[]) formatStringForPDFStream(string str, string fontName, int fontSize)
+        public ValueTuple<string[], double[]> formatStringForPDFStream(string str, string fontName, int fontSize)
         {
-            string str1 = System.Text.RegularExpressions.Regex.Replace(str, "/PagesCount", $"{document.numPages}");
-            string str2 = System.Text.RegularExpressions.Regex.Replace(str1, "/PageNum", $"{number}");
+            string str1 = System.Text.RegularExpressions.Regex.Replace(str, "/PagesCount", document.numPages.ToString());
+            string str2 = System.Text.RegularExpressions.Regex.Replace(str1, "/PageNum", number.ToString());
             str2 = str2.Replace("\r", "");
             string[] arrStrings = str2.Split('\n');
             double[] arrTrueStringLengths = new double[arrStrings.Length];
@@ -343,7 +358,7 @@ namespace pdfParserByMH
                 strBuild.Append(')');
                 arrStrings[i] = strBuild.ToString();
             }
-            return (arrStrings, arrTrueStringLengths);
+            return new ValueTuple<string[],double[]>(arrStrings, arrTrueStringLengths);
         }
     }
 }

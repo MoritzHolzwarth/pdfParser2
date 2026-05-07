@@ -113,7 +113,8 @@ namespace pdfParserByMH
                         }
                         break;
                     default:
-                        throw new System.Exception($"Error in pdfParser.distributeXRefEntries(): unknown use Status {entry.useStatus}!");
+                        //throw new System.Exception($"Error in pdfParser.distributeXRefEntries(): unknown use Status {entry.useStatus}!"); > C# 5
+                        throw new System.Exception(string.Format("Error in pdfParser.distributeXRefEntries(): unknown use Status {0}!", entry.useStatus));
                 }
             }
         }
@@ -129,8 +130,9 @@ namespace pdfParserByMH
                 {
                     continue;
                 }
-                if(entity is pdfArray pdfarr)
+                if(entity is pdfArray)
                 {
+                    pdfArray pdfarr = (pdfArray)entity;
                     if(!pdfarr.isFullyResolved())
                         pdfarr.ensureResolvedArray(xrefCol);
                     for(int i=0; i<pdfarr.count(); i++)
@@ -142,8 +144,9 @@ namespace pdfParserByMH
                         }
                     }
                 }
-                else if(entity is pdfDictionary pdfdict)
+                else if(entity is pdfDictionary)
                 {
+                    pdfDictionary pdfdict = (pdfDictionary)entity;
                     if(!pdfdict.isFullyResolved())
                         pdfdict.ensureResolvedDict(xrefCol);
                     foreach(string key in pdfdict.keys())
@@ -155,8 +158,9 @@ namespace pdfParserByMH
                         }
                     }
                 }
-                else if(entity is pdfStream pdfstream)
+                else if(entity is pdfStream)
                 {
+                    pdfStream pdfstream = (pdfStream)entity;
                     pdfDictionary streamdict = pdfstream.dictionary;
                     if(!streamdict.isFullyResolved())
                         streamdict.ensureResolvedDict(xrefCol);

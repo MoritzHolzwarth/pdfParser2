@@ -5,7 +5,8 @@ namespace pdfParserByMH
 {
     public class pdfStream : pdfEntity
     {
-        public pdfDictionary dictionary {get;} //Every pdfStream consists of a pdfDictionary, followed by a binary, possible compressed data stream
+        //public pdfDictionary dictionary {get;} > C# 5
+        public pdfDictionary dictionary {get; private set;}  //Every pdfStream consists of a pdfDictionary, followed by a binary, possible compressed data stream
         public byte[] data {get; private set;}
         private System.Collections.Generic.List<string> lstFilters; //The list of Filters that were used (in reverse order than in this list) to compress the data.
                                                                     //To uncompress the data, apply each inverse filter to the data, in the order of this list
@@ -101,12 +102,13 @@ namespace pdfParserByMH
             else
                 throw new System.Exception("Error in pdfStream.makeFilters(): Neither does the pdfStream's dictionary provide the resolved /Filter, nor is an xrefTable given to resolve it!");
             
-            if(filterEntity is pdfName pdfnam) //Only one Filter present without wrapper Array
+            if(filterEntity is pdfName) //Only one Filter present without wrapper Array
             {
-                lstFilters.Add((pdfnam).value);
+                lstFilters.Add(((pdfName)filterEntity).value);
             }
-            else if(filterEntity is pdfArray arrFilters)
+            else if(filterEntity is pdfArray)
             {
+                pdfArray arrFilters = (pdfArray)filterEntity;
                 if(arrFilters.isFullyResolved())
                 {
                     for(int i=0; i < arrFilters.count(); i++)
@@ -148,8 +150,9 @@ namespace pdfParserByMH
             else
                 throw new System.Exception("Error in pdfStream.makeFilters(): Neither does the pdfStream's dictionary provide the resolved /DecodeParams, nor is an xrefTable given to resolve it!");
 
-            if(decodeParmsEntity is pdfDictionary dictDecodeParms) //Only one decodeParams dict present, without wrapper array
+            if(decodeParmsEntity is pdfDictionary) //Only one decodeParams dict present, without wrapper array
             {
+                pdfDictionary dictDecodeParms = (pdfDictionary)decodeParmsEntity;
                 if(!dictDecodeParms.isFullyResolved()) //At this point, the decodeParams dict is required to be fully resolved. If it isnt yet, it must be resolved now via the xrefTable
                 {
                     if(xrefTab == null)
@@ -158,13 +161,14 @@ namespace pdfParserByMH
                 }
                 lstDecodeParms.Add(dictDecodeParms);
             }
-            else if(decodeParmsEntity is pdfArray arrDecodeDicts) //If an array of decodeParam-dictionaries is provided, then that array as well as the dictionaries it contains must be fully resolved
+            else if(decodeParmsEntity is pdfArray) //If an array of decodeParam-dictionaries is provided, then that array as well as the dictionaries it contains must be fully resolved
             {
+                pdfArray arrDecodeDicts = (pdfArray)decodeParmsEntity;
                 if(arrDecodeDicts.isFullyResolved())
                 {
                     for(int i=0; i < arrDecodeDicts.count(); i++)
                     {
-                        dictDecodeParms = (pdfDictionary)arrDecodeDicts.getResolved(i); //each decodeParam-dictionary is then handeled analogous to above
+                        pdfDictionary dictDecodeParms = (pdfDictionary)arrDecodeDicts.getResolved(i); //each decodeParam-dictionary is then handeled analogous to above
                         if(!dictDecodeParms.isFullyResolved())
                         {
                             if(xrefTab == null)
@@ -178,7 +182,7 @@ namespace pdfParserByMH
                 {
                     for(int i=0; i < arrDecodeDicts.count(); i++)
                     {
-                        dictDecodeParms = (pdfDictionary)xrefTab.getNonRef(arrDecodeDicts.get(i));
+                        pdfDictionary dictDecodeParms = (pdfDictionary)xrefTab.getNonRef(arrDecodeDicts.get(i));
                         if(!dictDecodeParms.isFullyResolved())
                         {
                             if(xrefTab == null)

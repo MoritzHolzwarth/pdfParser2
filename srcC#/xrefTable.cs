@@ -105,7 +105,8 @@ namespace pdfParserByMH
                 case 2:
                     return getPDFEntityFromObjStream(entry);
                 default:
-                    throw new System.Exception($"Error in xrefTable.getPDFEntity(): invalid useStatus {entry.useStatus}!");
+                    //throw new System.Exception($"Error in xrefTable.getPDFEntity(): invalid useStatus {entry.useStatus}!");
+                    throw new System.Exception(string.Format("Error in xrefTable.getPDFEntity(): invalid useStatus {0}!", entry.useStatus));
             }
         }
 

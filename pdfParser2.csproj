@@ -6,6 +6,7 @@
     <ImplicitUsings>false</ImplicitUsings>
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>pdfParser2</AssemblyName>
+    <LangVersion>5</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>

@@ -86,7 +86,8 @@ namespace pdfParserByMH
         public pdfEntity getResolved(int i, xrefTable xrefTab=null) //Note: if given, we only use the xrefTab to get one specific resolved item, not to resolve all of the array's items.
         {                                                           //That is because at the point this method is called, the xrefTable may be not yet complete!
             if(i >= items.Count)
-                throw new System.Exception($"Error in pdfArray.getResolved(): index {i} out of Range!");
+                //throw new System.Exception($"Error in pdfArray.getResolved(): index {i} out of Range!"); > C# 5
+                throw new System.Exception(string.Format("Error in pdfArray.getResolved(): index {0} out of Range!", i));
             if(!(items[i] is pdfObjectReference))
                 return items[i];
             if(!isFullyResolved())

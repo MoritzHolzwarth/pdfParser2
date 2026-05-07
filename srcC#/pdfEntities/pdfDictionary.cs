@@ -16,7 +16,8 @@ namespace pdfParserByMH
         public pdfEntity get(string str)
         {
             if(!dict.ContainsKey(str))
-                throw new System.Exception($"Error in pdfDictionary.get(): key {str} does not exist!");
+                //throw new System.Exception($"Error in pdfDictionary.get(): key {str} does not exist!"); > C# 5
+                throw new System.Exception(string.Format("Error in pdfDictionary.get(): key {0} does not exist!", str));
             return dict[str];
         }
         public void add(string str, pdfEntity val)
@@ -124,13 +125,15 @@ namespace pdfParserByMH
         public pdfEntity getResolved(string str, xrefTable xrefTab = null)
         {
             if(!dict.ContainsKey(str))
-                throw new System.Exception($"Error in pdfDictionary.getResolved(): key {str} does not exist!");
+                //throw new System.Exception($"Error in pdfDictionary.getResolved(): key {str} does not exist!"); > C# 5
+                throw new System.Exception(string.Format("Error in pdfDictionary.getResolved(): key {0} does not exist!", str));
             if(!(dict[str] is pdfObjectReference))
                 return dict[str];
             if(!resolvedDict.ContainsKey(str))
             {
                 if(xrefTab == null)
-                    throw new System.Exception($"Error in pdfDictionary.getResolved(): key {str} does not exist in resolvedDict and no xrefTab was provided!");
+                    //throw new System.Exception($"Error in pdfDictionary.getResolved(): key {str} does not exist in resolvedDict and no xrefTab was provided!"); > C# 5
+                    throw new System.Exception(string.Format("Error in pdfDictionary.getResolved(): key {0} does not exist in resolvedDict and no xrefTab was provided!", str));
                 return xrefTab.getNonRef(dict[str]);
             }
             return resolvedDict[str];

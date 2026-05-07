@@ -1,5 +1,6 @@
 ﻿using System;
 using System.CodeDom;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing.Drawing2D;
 using System.Linq;
@@ -109,7 +110,8 @@ namespace pdfParserByMH
                 }
                 else
                 {
-                    throw new System.Exception($"Error in Inflater.inflate(): invalid BTYPE value {BTYPE}!");
+                    //throw new System.Exception($"Error in Inflater.inflate(): invalid BTYPE value {BTYPE}!");
+                    throw new System.Exception(string.Format("Error in Inflater.inflate(): invalid BTYPE value {0}!", BTYPE));
                 }
                 if(BFINAL == 1)
                 {
@@ -239,12 +241,14 @@ namespace pdfParserByMH
                 numFoundCLs += processCLSymbol(clSymbol, ref arrCLs, numFoundCLs);
             }
             if(numFoundCLs != numExpectedCLs)
-                throw new System.Exception($"Error in Inflater.makeLitlenOrDistanceHuffTree(): number of nonzero CLs are not matching ({numFoundCLs} and {numExpectedCLs})!");
-
+                //throw new System.Exception($"Error in Inflater.makeLitlenOrDistanceHuffTree(): number of nonzero CLs are not matching ({numFoundCLs} and {numExpectedCLs})!");
+                throw new System.Exception( string.Format("Error in Inflater.makeLitlenOrDistanceHuffTree(): number of nonzero CLs are not matching ({0} and {1})!", numFoundCLs, numExpectedCLs));
             int[] arrSymbols = System.Linq.Enumerable.Range(0,numTotalSymbols).ToArray();
             int[] arrOrderedSymbols;
             int[] arrOrderedCLs;
-            (arrOrderedSymbols, arrOrderedCLs) = orderSymbolsAndCLs(arrSymbols,arrCLs);
+            var tupleOrderedSymbolsAndCLs = orderSymbolsAndCLs(arrSymbols,arrCLs);
+            arrOrderedSymbols = tupleOrderedSymbolsAndCLs.Key;
+            arrOrderedCLs = tupleOrderedSymbolsAndCLs.Value;
 
             HuffmanTree huffTree = new HuffmanTree();
             uint code = 0;
@@ -275,7 +279,8 @@ namespace pdfParserByMH
         public int processCLSymbol(int clSymbol, ref int[]arrCLs, int numFoundCLs)
         {
             if(clSymbol < 0 || clSymbol > 18)
-                throw new System.Exception($"Error in Inflater.processCLSymbol(): invalid CL-Symbol {clSymbol}!");
+                //throw new System.Exception($"Error in Inflater.processCLSymbol(): invalid CL-Symbol {clSymbol}!");
+                throw new System.Exception(string.Format("Error in Inflater.processCLSymbol(): invalid CL-Symbol {0}!", clSymbol));
             
             if(clSymbol <= 15)
             {
@@ -316,7 +321,8 @@ namespace pdfParserByMH
         private HuffmanTree makeCLHuffTree(uint numCLCodes)
         {
             if(numCLCodes > 19 || numCLCodes < 0)
-                throw new System.Exception($"Error in Inflater.makeCLHuffTree(): Invalid number of CL codes {numCLCodes}!");
+                //throw new System.Exception($"Error in Inflater.makeCLHuffTree(): Invalid number of CL codes {numCLCodes}!");
+                throw new System.Exception(string.Format("Error in Inflater.makeCLHuffTree(): Invalid number of CL codes {0}!", numCLCodes));
 
             int[] arrCLCLs = new int[19];
             for(int i=0; i<numCLCodes; i++)
@@ -333,7 +339,9 @@ namespace pdfParserByMH
 
             int[] arrOrderedSymbols;
             int[] arrOrderedCLs;
-            (arrOrderedSymbols, arrOrderedCLs) = orderSymbolsAndCLs(arrCLSymbolsForDynHuff,arrCLCLs);
+            var tupleOrderedSymbolsAndCLs = orderSymbolsAndCLs(arrCLSymbolsForDynHuff,arrCLCLs);    //using KeyValuePair (var) because C# 5 doesn't have normal Tuple
+            arrOrderedSymbols = tupleOrderedSymbolsAndCLs.Key;
+            arrOrderedCLs = tupleOrderedSymbolsAndCLs.Value;
 
             HuffmanTree clHuffTree = new HuffmanTree();
             uint code = 0;
@@ -361,7 +369,7 @@ namespace pdfParserByMH
             return clHuffTree;
         }
 
-        private (int[],int[]) orderSymbolsAndCLs(int[] arrSymbols, int[] arrCLs)
+        private KeyValuePair<int[],int[]> orderSymbolsAndCLs(int[] arrSymbols, int[] arrCLs)
         {
             if(arrSymbols.Length != arrCLs.Length)
                 throw new System.Exception("Error in Inflater.orderSymbolsAndCLs(): unequal numbers of Symbols and CLs!");
@@ -402,13 +410,14 @@ namespace pdfParserByMH
                 tempList.Sort(); //... then sorting tempList numerically...
                 lstOrderedSymbols.AddRange(tempList); //.. and using this as final symbol order
             }
-            return (lstOrderedSymbols.ToArray(), lstOrderedCLs.ToArray());
+            return new KeyValuePair<int[], int[]>(lstOrderedSymbols.ToArray(), lstOrderedCLs.ToArray()); //using KeyValuePair because C# 5 doesn't have normal Tuple
         }
 
         private int getLengthValue(int lengthSymbol)
         {
             if(lengthSymbol < 257 || lengthSymbol > 288)
-                throw new System.Exception($"Error in Inflate.readLengthValue(): invalid Length Symbol {lengthSymbol}!");
+                //throw new System.Exception($"Error in Inflate.readLengthValue(): invalid Length Symbol {lengthSymbol}!");
+                throw new System.Exception(string.Format("Error in Inflate.readLengthValue(): invalid Length Symbol {0}!", lengthSymbol));
             if(lengthSymbol < 265)
             {
                 return lengthSymbol - 254;
@@ -431,13 +440,15 @@ namespace pdfParserByMH
             {
                 return 258;
             }
-            throw new System.Exception($"Error in Inflate.readLengthValue(): the length Symbol {lengthSymbol} exists, but is not meant to ever be used!");
+            //throw new System.Exception($"Error in Inflate.readLengthValue(): the length Symbol {lengthSymbol} exists, but is not meant to ever be used!");
+            throw new System.Exception(string.Format("Error in Inflate.readLengthValue(): the length Symbol {0} exists, but is not meant to ever be used!", lengthSymbol));
         }
 
         private int getDistanceValue(int distSymbol)
         {
             if(distSymbol < 0 || distSymbol > 31)
-                throw new System.Exception($"Error in Inflator.getDistanceValue(): invalid Distance Symbol {distSymbol}");
+                //throw new System.Exception($"Error in Inflator.getDistanceValue(): invalid Distance Symbol {distSymbol}");
+                throw new System.Exception(string.Format("Error in Inflator.getDistanceValue(): invalid Distance Symbol {0}", distSymbol));
             
             if(distSymbol <=3)
             {
@@ -457,7 +468,8 @@ namespace pdfParserByMH
                 initSymbol += 2;
                 numBits++;
             }
-            throw new System.Exception($"Error in Inflator.getDistanceValue(): the distance Symbol {distSymbol} exists but is not meant to ever be used!");
+            //throw new System.Exception($"Error in Inflator.getDistanceValue(): the distance Symbol {distSymbol} exists but is not meant to ever be used!");
+            throw new System.Exception(string.Format("Error in Inflator.getDistanceValue(): the distance Symbol {0} exists but is not meant to ever be used!", distSymbol));
         }
     }
 }

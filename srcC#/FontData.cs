@@ -143,7 +143,8 @@ namespace pdfParserByMH
                 {
                     string unicode = arrUnicodes[100*i+j];
                     int charCode = usableFontDataDict[unicode][0];
-                    string entry = $"<{unicode}> {charCode.ToString("X2")}\n";
+//                    string entry = $"<{unicode}> {charCode.ToString("X2")}\n";
+                    string entry = string.Format("<{0}> <{1}>\n", unicode, charCode.ToString("X2"));
                     lstBytes.AddRange(System.Text.Encoding.ASCII.GetBytes(entry));
                 }
                 lstBytes.AddRange(Utils.stringToBytes("endbfchar\n\n"));
@@ -153,7 +154,8 @@ namespace pdfParserByMH
             {
                 string unicode = arrUnicodes[100*numFullSubTables+i];
                 int charCode = usableFontDataDict[unicode][0];
-                string entry = $"<{unicode}> {charCode.ToString("X2")}\n";
+//                string entry = $"<{unicode}> {charCode.ToString("X2")}\n";
+                string entry = string.Format("<{0}> <{1}>\n", unicode, charCode.ToString("X2"));
                 lstBytes.AddRange(System.Text.Encoding.ASCII.GetBytes(entry));
             }
             lstBytes.AddRange(Utils.stringToBytes("endbfchar\n\n"));

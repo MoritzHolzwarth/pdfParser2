@@ -23,7 +23,7 @@ namespace pdfParserByMH
         }
         private void writeNormal()
         {   
-            if(outputPath is null)
+            if(outputPath == null)
             {
                 throw new System.Exception("Error in pdfDocument.writeNormal(): outputPath is null!");
             }
@@ -64,7 +64,8 @@ namespace pdfParserByMH
             int startxref = (int)fileStream.Length; //get the startxref position before writing the xref ..
             byte[] xrefAndTrailer = getXRefAndTrailerBytes(newXRefDict, xrefBlockHeaders.ToArray());
             fileStream.Write(xrefAndTrailer, 0, xrefAndTrailer.Length); //.. then write the xref
-            byte[] fileclosing = Utils.stringToBytes($"\nstartxref {startxref}\n%%EOF"); //then write the startxref and EOF
+            //byte[] fileclosing = Utils.stringToBytes($"\nstartxref {startxref}\n%%EOF"); > C# 5 
+            byte[] fileclosing = Utils.stringToBytes(string.Format("\nstartxref {0}\n%%EOF", startxref)); //then write the startxref and EOF
             fileStream.Write(fileclosing,0,fileclosing.Length);
             fileStream.Close();
         }
@@ -101,13 +102,15 @@ namespace pdfParserByMH
             {
                 int firstIndex = firstAndLastIndex[0];
                 int latestIndex = firstAndLastIndex[1];
-                xrefTextBytes.AddRange(System.Text.Encoding.ASCII.GetBytes($"{firstIndex} {latestIndex-firstIndex+1}")); //the block's header ('init index' and 'number of block-entries')
+                //xrefTextBytes.AddRange(System.Text.Encoding.ASCII.GetBytes($"{firstIndex} {latestIndex-firstIndex+1}"));  > C# 5
+                xrefTextBytes.AddRange(System.Text.Encoding.ASCII.GetBytes(string.Format("{0} {1}", firstIndex, latestIndex-firstIndex+1))); //the block's header ('init index' and 'number of block-entries')
                 xrefTextBytes.Add(0x0A);
                 for(int i = firstIndex; i <= latestIndex; i++)
                 {
                     xrefEntry entry = xrefDict[i];
                     char useStatusText = (entry.useStatus == 1)? 'n': 'f'; //we onyl consider normal xrefTables and no ObjStms, so useStatus = 2 is not possible
-                    string entryText = $"{entry.offset} {entry.generation} {useStatusText}";
+                    //string entryText = $"{entry.offset} {entry.generation} {useStatusText}"; > C# 5
+                    string entryText = string.Format("{0} {1} {2}", entry.offset, entry.generation, useStatusText);
                     xrefTextBytes.AddRange(System.Text.Encoding.ASCII.GetBytes(entryText));
                     xrefTextBytes.Add(0x0A);
                 }

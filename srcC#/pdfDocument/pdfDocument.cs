@@ -81,15 +81,17 @@ namespace pdfParserByMH
                     if(!dict.containsKey("/Kids"))
                         throw new System.Exception("Error in pdfDocument.createPagesDict(): /Pages object has no /Kids!");
                     pdfEntity kidsEntity = dict.getResolved("/Kids");
-                    if(kidsEntity is pdfArray arrKids)
+                    if(kidsEntity is pdfArray)
                     {
+                        pdfArray arrKids = (pdfArray)kidsEntity;
                         for(int i=0; i<arrKids.count(); i++)
                         {
                             queue.Enqueue((pdfDictionary)arrKids.getResolved(i));
                         }
                     }
-                    else if(kidsEntity is pdfDictionary dictKid)
+                    else if(kidsEntity is pdfDictionary)
                     {
+                        pdfDictionary dictKid = (pdfDictionary)kidsEntity;
                         queue.Enqueue(dictKid);
                     }
                     else

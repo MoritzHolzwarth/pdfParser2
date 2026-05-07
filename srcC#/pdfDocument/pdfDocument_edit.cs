@@ -5,6 +5,39 @@ using System.Linq;
 
 namespace pdfParserByMH
 {
+    // struct FourTuple //Need to define this because C# 5 doesn't have Tuples ,... Or not. Just use ValueTuple<>!
+    // {
+    //     public readonly double A, B, C, D;
+
+    //     public FourTuple(double a, double b, double c, double d)
+    //     {
+    //         A = a; B = b; C = c; D = d;
+    //     }
+
+    //     public override bool Equals(object obj)
+    //     {
+    //         if (!(obj is FourTuple)) return false;
+    //         FourTuple other = (FourTuple)obj;
+    //         return A == other.A && B == other.B && C == other.C && D == other.D;
+    //     }
+
+    //     public override int GetHashCode()
+    //     {
+    //         unchecked
+    //         {
+    //             int hash = 17;
+    //             hash = hash * 31 + A.GetHashCode();
+    //             hash = hash * 31 + B.GetHashCode();
+    //             hash = hash * 31 + C.GetHashCode();
+    //             hash = hash * 31 + D.GetHashCode();
+    //             return hash;
+    //         }
+    //     }
+
+    //     public static bool operator ==(FourTuple x, FourTuple y) { return x.Equals(y); }
+    //     public static bool operator !=(FourTuple x, FourTuple y) { return !x.Equals(y); }
+    // }
+
     public sealed partial class pdfDocument
     {
         public bool stempeln(string headerText, string footerText, PageXPosition headerX, PageXPosition footerX, string fontName, int fontSize, double[] fontColor, 
@@ -80,7 +113,7 @@ namespace pdfParserByMH
             foreach(pdfPage page in pagesDict.Values)
             {
                 double[] mediaBox = page.mediaBox; //The keys are not mediaBox double[] arrays but tuples because tuples get compared by Value while double[] get compared by reference.
-                var mediaBoxTuple = (mediaBox[0], mediaBox[1], mediaBox[2], mediaBox[3]);
+                var mediaBoxTuple = new ValueTuple<double, double, double, double>(mediaBox[0], mediaBox[1], mediaBox[2], mediaBox[3]);
                 if(dict_MediaBoxToStreamObRef.ContainsKey(mediaBoxTuple)) //If the current page's media box is already known (from an earlier page)
                 {                                                         //use that earlier page's starting stream obRef for this page (i.e. adding it to the start of this page's content stream references)
                     startingStreamObRef = dict_MediaBoxToStreamObRef[mediaBoxTuple];
@@ -92,7 +125,8 @@ namespace pdfParserByMH
                     double ty = 0.5*(mediaBox[3] - mediaBox[1]);
                     double vx = tx*(1-scaleFactor);
                     double vy = ty*(1-scaleFactor);
-                    string scaleCommand = $"q {scaleFactor} 0 0 {scaleFactor} {vx} {vy} cm\n";
+                    //string scaleCommand = $"q {scaleFactor} 0 0 {scaleFactor} {vx} {vy} cm\n";
+                    string scaleCommand = string.Format("q {0} 0 0 {1} {2} {3} cm\n", scaleFactor, scaleFactor, vx, vy);
 
                     startingStreamObRef = createNewStreamFromUncompressedData(Utils.stringToBytes(scaleCommand)); //... and pack that scaling command into a new starting stream
                     dict_MediaBoxToStreamObRef.Add(mediaBoxTuple, startingStreamObRef); //Add the new mediaBox and corresponding starting stream to the dictionary
@@ -108,9 +142,9 @@ namespace pdfParserByMH
         {
             System.Collections.Generic.HashSet<int> setSpecificVerticalPages = new System.Collections.Generic.HashSet<int>();
             System.Collections.Generic.HashSet<int> setSpecificHorizontalPages = new System.Collections.Generic.HashSet<int>();
-            if(!(specificVerticalPages is null))
+            if(!(specificVerticalPages == null))
                 setSpecificVerticalPages = new System.Collections.Generic.HashSet<int>(specificVerticalPages);
-            if(!(specificHorizontalPages is null))
+            if(!(specificHorizontalPages == null))
                 setSpecificHorizontalPages = new System.Collections.Generic.HashSet<int>(specificHorizontalPages);
             string fontToken = "";
             pdfObjectReference fontObRef = null;

@@ -6,9 +6,11 @@ namespace pdfParserByMH
     public partial class pdfPage
     {
         private pdfDocument document;
-        public int number {get;}
+        //public int number {get;} > C# 5
+        public int number {get; private set;}
         private pdfDictionary dictionary;
-        public pdfDictionary parent {get;}
+        //public pdfDictionary parent {get;} > C# 5
+        public pdfDictionary parent {get; private set;}
         public pdfDictionary resources {get; set;}
         public double[] mediaBox {get; set;}
         private pdfInteger rotateState;
@@ -28,7 +30,8 @@ namespace pdfParserByMH
             }
             catch(System.Exception exc)
             {
-                System.Console.Error.WriteLine($"Exception caught in pdfPage.pdfPage(), pageNum {num}");
+                //System.Console.Error.WriteLine($"Exception caught in pdfPage.pdfPage(), pageNum {num}"); > C# 5
+                System.Console.Error.WriteLine(string.Format("Exception caught in pdfPage.pdfPage(), pageNum {0}", num));
                 System.Console.Error.WriteLine(exc);
                 System.Environment.Exit(1);
             }
@@ -50,13 +53,13 @@ namespace pdfParserByMH
             for(int i=0; i<4; i++)
             {
                 pdfEntity number = mediaBoxPDFArr.get(i);
-                if(number is pdfInteger pdfint)
+                if(number is pdfInteger)
                 {
-                    mediaBox[i] = pdfint.value;
+                    mediaBox[i] = ((pdfInteger)number).value;
                 }
-                else if(number is pdfReal pdfreal)
+                else if(number is pdfReal)
                 {
-                    mediaBox[i] = pdfreal.value;
+                    mediaBox[i] = ((pdfReal)number).value;
                 }
                 else
                 {
@@ -103,12 +106,13 @@ namespace pdfParserByMH
                 return;
             }
             pdfEntity contentsEntity = dictionary.getResolved("/Contents");
-            if(contentsEntity is pdfStream pdfstream)
+            if(contentsEntity is pdfStream)
             {
-                lstContents.Add(pdfstream);
+                lstContents.Add((pdfStream)contentsEntity);
             }
-            else if(contentsEntity is pdfArray pdfarr)
+            else if(contentsEntity is pdfArray)
             {
+                pdfArray pdfarr = (pdfArray)contentsEntity;
                 for(int i=0; i < pdfarr.count(); i++)
                 {
                     lstContents.Add((pdfStream)pdfarr.getResolved(i));
