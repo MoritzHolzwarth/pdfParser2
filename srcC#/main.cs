@@ -14,7 +14,7 @@ namespace pdfParserByMH
         [STAThread] //For some reason, this is very important for Windows.Forms to work properly!
         static int Main()
         {
-            System.Console.WriteLine("Hello from Main");
+            //System.Console.WriteLine("Hello from Main");
 
             FrontEndProgram program = new FrontEndProgram();
             program.run();
