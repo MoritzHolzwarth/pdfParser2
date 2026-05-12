@@ -33,13 +33,14 @@ namespace pdfParserByMH
             form.StartPosition = FormStartPosition.CenterScreen;
             form.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             form.Size = new System.Drawing.Size(800,900);
-            makeAllDokuForm();
             makeSingelPDFForm();
+            makeAllDokuForm();
             System.Windows.Forms.TabControl tabControl = new System.Windows.Forms.TabControl();
             tabControl.Size = new System.Drawing.Size(800,900);
-            tabControl.Controls.Add(AllDokuForm);
             tabControl.Controls.Add(SinglePDFForm);
+            tabControl.Controls.Add(AllDokuForm);
             form.Controls.Add(tabControl);
+            form.AutoScroll = true;
         }
 
         public void run()
