@@ -1,4 +1,4 @@
-namespace pdfParserByMH
+﻿namespace pdfParserByMH
 {
     public partial class Utils
     {

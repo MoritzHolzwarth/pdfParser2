@@ -1,43 +1,10 @@
-using System;
+﻿using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics.Tracing;
 using System.Linq;
 
 namespace pdfParserByMH
 {
-    // struct FourTuple //Need to define this because C# 5 doesn't have Tuples ,... Or not. Just use ValueTuple<>!
-    // {
-    //     public readonly double A, B, C, D;
-
-    //     public FourTuple(double a, double b, double c, double d)
-    //     {
-    //         A = a; B = b; C = c; D = d;
-    //     }
-
-    //     public override bool Equals(object obj)
-    //     {
-    //         if (!(obj is FourTuple)) return false;
-    //         FourTuple other = (FourTuple)obj;
-    //         return A == other.A && B == other.B && C == other.C && D == other.D;
-    //     }
-
-    //     public override int GetHashCode()
-    //     {
-    //         unchecked
-    //         {
-    //             int hash = 17;
-    //             hash = hash * 31 + A.GetHashCode();
-    //             hash = hash * 31 + B.GetHashCode();
-    //             hash = hash * 31 + C.GetHashCode();
-    //             hash = hash * 31 + D.GetHashCode();
-    //             return hash;
-    //         }
-    //     }
-
-    //     public static bool operator ==(FourTuple x, FourTuple y) { return x.Equals(y); }
-    //     public static bool operator !=(FourTuple x, FourTuple y) { return !x.Equals(y); }
-    // }
-
     public sealed partial class pdfDocument
     {
         public bool stempeln(string headerText, string footerText, PageXPosition headerX, PageXPosition footerX, string fontName, int fontSize, double[] fontColor, 
@@ -45,18 +12,9 @@ namespace pdfParserByMH
                             int[] specificVerticalPages = null, int[] specificHorizontalPages = null, int xDistance = 20, int yDistance = 20)
         {
             System.Console.Error.WriteLine("pdfDocument started stempeln");
-            try
-            {
-                scaleAllPages(scaleFactor);
-                addHeaderAndFooterToAllPages(headerText, footerText, headerX, footerX, fontName, fontSize, fontColor, forceVertical, forceHorizontal,
-                                             specificVerticalPages, specificHorizontalPages, xDistance, yDistance);
-            }
-            catch(System.Exception exc)
-            {
-                System.Console.Error.WriteLine("Exception caught in pdfDocument.stempeln()");
-                System.Console.Error.WriteLine(exc);
-                return false;
-            }
+            scaleAllPages(scaleFactor);
+            addHeaderAndFooterToAllPages(headerText, footerText, headerX, footerX, fontName, fontSize, fontColor, forceVertical, forceHorizontal,
+                                            specificVerticalPages, specificHorizontalPages, xDistance, yDistance);
             System.Console.Error.WriteLine("pdfDocument finished stempeln");
             return true;
         }

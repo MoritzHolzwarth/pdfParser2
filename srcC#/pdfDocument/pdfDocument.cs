@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using System.Dynamic;
 
 namespace pdfParserByMH
@@ -28,23 +28,14 @@ namespace pdfParserByMH
 
         public bool setFilePath(string inputPath)
         {
-            try
-            {
-                System.Console.Error.WriteLine("pdfDocument started parsing");
-                pdfParser parser = new pdfParser(inputPath); //All the Parsing happens via the Constructor of the pdfParser class
-                System.Console.Error.WriteLine("pdfDocument finished parsing");
-                xref = parser.xrefCol;                      //Retrieve the xref-Collection, the root ObRef, and info obRef from the pdfParser.
-                rootObRef = parser.rootObRef;               
-                infoObRef = parser.infoObRef;
-                createPagesDict();
-                numPages = pagesDict.Count;
-            }
-            catch(System.Exception exc)
-            {
-                System.Console.Error.WriteLine("Exception caught in pdfDocument.setFilePath()");
-                System.Console.Error.WriteLine(exc);
-                return false;
-            }
+            System.Console.Error.WriteLine("pdfDocument started parsing");
+            pdfParser parser = new pdfParser(inputPath); //All the Parsing happens via the Constructor of the pdfParser class
+            System.Console.Error.WriteLine("pdfDocument finished parsing");
+            xref = parser.xrefCol;                      //Retrieve the xref-Collection, the root ObRef, and info obRef from the pdfParser.
+            rootObRef = parser.rootObRef;               
+            infoObRef = parser.infoObRef;
+            createPagesDict();
+            numPages = pagesDict.Count;
             return true;
         }
 

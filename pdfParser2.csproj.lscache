@@ -1,0 +1,112 @@
+version=1
+
+# This file caches language service data to improve the performance of C# Dev Kit.
+# It is not intended for manual editing. It can safely be deleted and will be
+# regenerated automatically. For more information, see https://aka.ms/lscache
+#
+# To control where cache files are stored, use the following VS Code setting:
+#   "dotnet.projectsystem.cacheInProjectFolder": true
+
+[project]
+language=C#
+primary
+lastDtbSucceeded
+
+[properties]
+AssemblyName=pdfParser2
+CommandLineArgsForDesignTimeEvaluation=-langversion:5 -define:TRACE
+CompilerGeneratedFilesOutputPath=
+MaxSupportedLangVersion=7.3
+ProjectAssetsFile=<PATH>obj/project.assets.json
+RootNamespace=pdfParser2
+RunAnalyzers=
+RunAnalyzersDuringLiveAnalysis=
+SolutionPath=<PATH>pdfParser2.sln
+TargetFrameworkIdentifier=.NETFramework
+TargetPath=<PATH>bin/Debug/net472/pdfParser2.exe
+TargetRefPath=
+TemporaryDependencyNodeTargetIdentifier=net472
+
+[commandLineArguments]
+/noconfig
+/unsafe-
+/checked-
+/nowarn:1701,1702,1701,1702
+/fullpaths
+/nostdlib+
+/platform:AnyCPU
+/errorreport:prompt
+/warn:4
+/define:TRACE;DEBUG;NETFRAMEWORK;NET472;NET30_OR_GREATER;NET35_OR_GREATER;NET40_OR_GREATER;NET45_OR_GREATER;NET451_OR_GREATER;NET452_OR_GREATER;NET46_OR_GREATER;NET461_OR_GREATER;NET462_OR_GREATER;NET47_OR_GREATER;NET471_OR_GREATER;NET472_OR_GREATER
+/highentropyva+
+/debug+
+/debug:portable
+/filealign:512
+/optimize-
+/out:obj\Debug\net472\pdfParser2.exe
+/subsystemversion:6.00
+/target:exe
+/warnaserror-
+/utf8output
+/deterministic+
+/langversion:5
+/warnaserror+:NU1605
+
+[sourceFiles]
+obj/Debug/net472/
+ .NETFramework,Version=v4.7.2.AssemblyAttributes.cs
+ pdfParser2.AssemblyInfo.cs
+srcC#/
+ Decoder.cs
+ FontData.cs
+ main.cs
+ My_Custom_Inflater/
+  HuffmanTree.cs
+  Inflater.cs
+  Inflater_ReadBits.cs
+ pdfDocument/
+  pdfDocument.cs
+  pdfDocument_edit.cs
+  pdfDocument_write.cs
+  pdfDocument_writeEntities.cs
+ pdfEntities/
+  pdfArray.cs
+  pdfDictionary.cs
+  pdfEntities.cs
+  pdfStream.cs
+ pdfPage.cs
+ pdfPage_edit.cs
+ pdfParser/
+  pdfParser.cs
+  pdfParser_getXRefCol.cs
+  pdfParser_getXRefTab.cs
+ Span.cs
+ UI/
+  FrontEndProgram.cs
+  FrontEnd_AllDokuForm.cs
+  FrontEnd_SinglePDFForm.cs
+ Utils/
+  Utils.cs
+  Utils_CheckBytesOrSpan.cs
+  Utils_readASCIIFromSpan.cs
+  Utils_readPDFEntities.cs
+ xrefCollection.cs
+ xrefEntry.cs
+ xrefTable.cs
+
+[metadataReferences]
+<NUGET>/microsoft.netframework.referenceassemblies.net472/1.0.3/build/.NETFramework/v4.7.2/
+ mscorlib.dll
+ System.Core.dll
+ System.Data.dll
+ System.dll
+ System.Drawing.dll
+ System.IO.Compression.FileSystem.dll
+ System.Numerics.dll
+ System.Runtime.Serialization.dll
+ System.Windows.Forms.dll
+ System.Xml.dll
+ System.Xml.Linq.dll
+
+[analyzerConfigFiles]
+obj/Debug/net472/pdfParser2.GeneratedMSBuildEditorConfig.editorconfig

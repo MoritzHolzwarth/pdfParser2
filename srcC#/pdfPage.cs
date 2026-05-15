@@ -1,4 +1,4 @@
-using System.CodeDom;
+﻿using System.CodeDom;
 using System.Diagnostics.SymbolStore;
 using System.Linq;
 namespace pdfParserByMH

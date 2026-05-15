@@ -1,11 +1,13 @@
-using System;
+﻿using System;
 using System.CodeDom;
+using System.Diagnostics.Eventing.Reader;
 using System.Drawing;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.Remoting;
 using System.Runtime.Remoting.Messaging;
 using System.Runtime.Serialization;
+using System.Text;
 using System.Windows.Forms;
 
 namespace pdfParserByMH
@@ -31,7 +33,6 @@ namespace pdfParserByMH
         private string getFreeFontToken(string[] arrTokens)
         {
             int i = 1;
-            //string token = $"/F{i}"; > C# 5
             string token = "/F" + i.ToString();
             while(arrTokens.Contains(token))
             {
@@ -157,7 +158,6 @@ namespace pdfParserByMH
             
             string headerCommand = getTextBlockStreamCommand(arrHeaderText, headerXPos, header_relXPos, headerYPos, fontSize, fontToken, fontColor, rotationApplied);
             string footerCommand = getTextBlockStreamCommand(arrFooterText, footerXPos, footer_relXPos, footerYPos, fontSize, fontToken, fontColor, rotationApplied);
-            //string fullCommand = $"\n/HeaderAndFooterByMH BMC\n{headerCommand}\n{footerCommand}\nEMC\n"; > C# 5
             string fullCommand = string.Format("\n/HeaderAndFooterByMH BMC\n{0}\n{1}\nEMC\n", headerCommand, footerCommand);
             
             pdfObjectReference headerFooterStreamObRef = document.createNewStreamFromUncompressedData(Utils.stringToBytes(fullCommand));
@@ -167,31 +167,22 @@ namespace pdfParserByMH
         private string getTextBlockStreamCommand(string[] arrText, double xpos, double[] rel_xpos, double ypos, int fontSize, string fontToken, double[] fontColor, bool rotate)
         {
             int lineHeight = System.Convert.ToInt32(fontSize*1.2);
-            //string cmCommand = rotate? $"0 1 -1 0 {mediaBox[3]} 0 cm": ""; > C# 5
             string cmCommand = rotate? string.Format("0 1 -1 0 {0} 0 cm", mediaBox[3]): "";
-            //string rgCommand = $"{fontColor[0]} {fontColor[1]} {fontColor[2]} rg"; > C# 5
             string rgCommand = string.Format("{0} {1} {2} rg", fontColor[0], fontColor[1], fontColor[2]);
-            //string tfCommand = $"{fontToken} {fontSize} Tf"; > C# 5
             string tfCommand = string.Format("{0} {1} Tf", fontToken, fontSize);
-            //string tlCommand = $"{lineHeight} TL"; > C# 5
             string tlCommand = string.Format("{0} TL", lineHeight); 
             System.Text.StringBuilder strBuild = new System.Text.StringBuilder();
-            //strBuild.Append($"{xpos + rel_xpos[0]} {ypos} Td");
             strBuild.Append(string.Format("{0} {1} Td", xpos + rel_xpos[0], ypos));
-            //strBuild.Append($"\n{arrText[0]} Tj"); > C# 5
             strBuild.Append(string.Format("\n{0} Tj", arrText[0]));
             if(arrText.Length > 1)
             {
                 for(int i=1; i<arrText.Length; i++)
                 {
-                    //strBuild.Append($"\n{+rel_xpos[i]} {-lineHeight} Td"); > C# 5
                     strBuild.Append(string.Format("\n+{0} -{1} Td", rel_xpos[i], lineHeight));
-                    //strBuild.Append($"\n{arrText[i]} Tj"); > C# 5
                     strBuild.Append(string.Format("\n{0} Tj", arrText[i]));
                 }
             }
             string tdtjCommand = strBuild.ToString();
-            //string fullCommand = $"q\n{cmCommand}\n BT \n{rgCommand}\n{tfCommand}\n{tlCommand}\n{tdtjCommand}\n ET \nQ"; > C# 5
             string fullCommand = string.Format("q\n{0}\n BT \n{1}\n{2}\n{3}\n{4}\n ET \nQ", cmCommand, rgCommand, tfCommand, tlCommand, tdtjCommand);
             return fullCommand;
         }
@@ -223,7 +214,6 @@ namespace pdfParserByMH
                 case PageXPosition.Right:
                     return textWidths.Select(s => referenceWidth - s).ToArray();
                 default:
-                    //throw new System.Exception($"Error in pdfPage.getHeaderFooterRelativeXPosValues(): unknown PageXPosition Value {xpos}!"); > C# 5
                     throw new System.Exception(string.Format("Error in pdfPage.getHeaderFooterRelativeXPosValues(): unknown PageXPosition Value {0}!", xpos));
             }
         }
@@ -343,17 +333,29 @@ namespace pdfParserByMH
             {
                 string subStr = arrStrings[i];
                 arrTrueStringLengths[i] = document.fontData.getStandardizedTextLineWidth(subStr, fontName) * fontSize;
+                byte[] subStrBytes = Encoding.GetEncoding("Windows-1252").GetBytes(subStr);
                 System.Text.StringBuilder strBuild = new System.Text.StringBuilder();
                 strBuild.Append('(');
                 int j = 0;
                 while(j < subStr.Length)
                 {
-                    if(subStr[j] == '(' || subStr[j] == ')'|| subStr[j] == '\\')
+                    byte b = subStrBytes[j];
+                    if(b == '(' || b == ')'|| b == '\\')
                     {
                         strBuild.Append('\\');
+                        strBuild.Append((char)b);
+                        j++;
                     }
-                    strBuild.Append(subStr[j]);
-                    j++;
+                    else if(b > 127)
+                    {
+                        strBuild.Append("\\" + Convert.ToString(b, 8).PadRight(3,'0'));
+                        j++;
+                    }
+                    else
+                    {
+                        strBuild.Append((char)b);
+                        j++;
+                    }
                 }
                 strBuild.Append(')');
                 arrStrings[i] = strBuild.ToString();

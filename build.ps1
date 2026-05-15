@@ -1,4 +1,4 @@
-
+﻿
 $csc = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
 if (-not (Test-Path $csc)) {
     # Fallback to 32-bit framework
@@ -20,7 +20,7 @@ if($sourceFiles.Length -eq 0) {
 $fontDir = "$PSScriptRoot\fontData"
 $fontFiles = (Get-ChildItem -Path $fontDir -Recurse -Filter "*.json") | Select-Object -ExpandProperty FullName
 
-$outPath = Join-Path $PSScriptRoot "pdfParser2.exe"
+$outPath = Join-Path "$PSScriptRoot\bin\Debug\net472" "pdfParser2.exe"
 
 $cscargs = @("/target:exe", "/platform:anycpu", "/optimize+", "/langversion:5", "/out:`"$outPath`"") +
         ($fontFiles | ForEach-Object {"/resource:`"$_`",Font.$($_.Substring($fontDir.Length+1))"}) +
@@ -35,6 +35,6 @@ $cscArgs | ForEach-Object { Write-Host "  ARG: $_" }
 if ($LASTEXITCODE -eq 0) {
     Write-Host "Build succeeded: $OutputPath" -ForegroundColor Green
 } else {
-    Write-Error "Build FAILED (exit code $LASTEXITCODE)"
+    Write-Error "Build FAILED (exit code $LASTEXITCODE)" -ForegroundColor Red
     exit $LASTEXITCODE
 }

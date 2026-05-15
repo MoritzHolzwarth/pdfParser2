@@ -1,23 +1,14 @@
-namespace pdfParserByMH
+﻿namespace pdfParserByMH
 {
     public sealed partial class pdfDocument
     {
         public bool write(bool compress = false)
         {
             System.Console.Error.WriteLine("pdfDocument started writing");
-            try
-            {
-                if(compress)
-                    throw new System.Exception("Error in pdfDocument.write(): option 'Compress' is not yet implemented!");
-                else
-                    writeNormal();
-            }
-            catch(System.Exception exc)
-            {
-                System.Console.Error.WriteLine("Exception caught in pdfDocument.write().");
-                System.Console.Error.WriteLine(exc);
-                return false;
-            }
+            if(compress)
+                throw new System.Exception("Error in pdfDocument.write(): option 'Compress' is not yet implemented!");
+            else
+                writeNormal();
             System.Console.Error.WriteLine("pdfDocument finished writing");
             return true;
         }

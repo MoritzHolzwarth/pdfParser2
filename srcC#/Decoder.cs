@@ -29,8 +29,7 @@ namespace pdfParserByMH
                     decodedBytes = doASCII85Decode();
                     break;
                 default:
-                    //throw new System.Exception($"Error in Decoder.decode(): invalid filter {filter}"); > C# 5
-                    throw new System.Exception(string.Format("Error in Decoder.decode(): invalid filter {0}", filter));
+                    throw new System.Exception(string.Format("Error in Decoder.decode(): unknown filter {0}", filter));
             }
             return decodedBytes;
         }
@@ -49,13 +48,10 @@ namespace pdfParserByMH
                     encodedBytes = doASCII85Encode();
                     break;
                 default:
-                    //throw new System.Exception($"Error in Decoder.encode(): invalid filter {filter}"); > C# 5
-                    throw new System.Exception(string.Format("Error in Decoder.encode(): invalid filter {0}", filter));
+                    throw new System.Exception(string.Format("Error in Decoder.encode(): unknown filter {0}", filter));
             }
             return encodedBytes;
         }
-
-//This fails for pdf 81 from 00000-folder for no simple reason!
         private byte[] doFlateDecode()
         {
             ByteSpan spanBytesWithoutZLib = dataHasZLibWrapper(arrBytes)? new ByteSpan(arrBytes,2,arrBytes.Length-4): new ByteSpan(arrBytes);
@@ -86,7 +82,6 @@ namespace pdfParserByMH
             }
             else
             {
-                //throw new System.Exception($"Error in Decoder.doFlateDecode(): unknown /Predictor Value {predictorVal}!"); > C# 5
                 throw new System.Exception(string.Format("Error in Decoder.doFlateDecode(): unknown /Predictor Value {0}!", 0));
             }
             return arrBytesWithoutPredictor;
@@ -118,7 +113,6 @@ namespace pdfParserByMH
             }
             else
             {
-                //throw new System.Exception($"Error in Decoder.doFlateEncode(): unknown /Predictor Value {predictorVal}!"); > C# 5
                 throw new System.Exception(string.Format("Error in Decoder.doFlateEncode(): unknown /Predictor Value {0}!", predictorVal));
             }
             System.IO.MemoryStream memStreamOutput = new System.IO.MemoryStream();
@@ -246,7 +240,6 @@ namespace pdfParserByMH
                             }
                         break;
                     default:
-                        //throw new System.Exception($"Error in Decoder.undoPNGPredictor(): unknown row-Predictor value {predictorVal} encountered!");
                         throw new System.Exception(string.Format("Error in Decoder.undoPNGPredictor(): unknown row-Predictor value {0} encountered!", predictorVal));
                 }
             }

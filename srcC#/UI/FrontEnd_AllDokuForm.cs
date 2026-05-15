@@ -1,4 +1,4 @@
-
+﻿
 namespace pdfParserByMH
 {
     public class PathAndBox

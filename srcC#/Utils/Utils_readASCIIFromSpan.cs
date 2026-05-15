@@ -1,4 +1,4 @@
-using System.Data.Odbc;
+﻿using System.Data.Odbc;
 using System.Runtime.Remoting.Metadata.W3cXsd2001;
 
 namespace pdfParserByMH
