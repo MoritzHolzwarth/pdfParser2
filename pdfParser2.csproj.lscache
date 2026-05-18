@@ -83,6 +83,7 @@ srcC#/
  Span.cs
  UI/
   FrontEndProgram.cs
+  FrontEnd_AdjustDokuParamsForm.cs
   FrontEnd_AllDokuForm.cs
   FrontEnd_SinglePDFForm.cs
  Utils/

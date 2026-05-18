@@ -9,13 +9,14 @@ using System.IO;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using System.Windows.Forms.VisualStyles;
 using Microsoft.Win32;
 
 namespace pdfParserByMH
 {
-    enum StempelOptions {DoAllDoku, DoSingelPDF, Null}
+    enum StempelOptions {DoAllDoku, DoSingelPDF, AdjustDokuParams, Null}
     public partial class FrontEndProgram
     {
         System.Windows.Forms.Form form;
@@ -23,19 +24,21 @@ namespace pdfParserByMH
         System.Windows.Forms.TabPage AllDokuForm;
         System.Collections.Generic.Dictionary<string, PathAndBox> dictDocs;
         System.Windows.Forms.TabPage SinglePDFForm;
+        Form DokuParamsForm;
         pdfDocument doc;
         string dokuFolderPath;
         string uploadFolderPath;
         string dokuID;
         string dokuRev;
-        // string savedFormContentsPath;
-        // System.Collections.Generic.Dictionary<string,string> dictSinglePDFFormContents;
+        string ADBRev;
+        string savedContentsPath;
+        System.Collections.Generic.Dictionary<string,string> dictSavedContents;
         
         public FrontEndProgram()
         {
-            // savedFormContentsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), 
-            //                                 "pdfParser2ByMH", "FormContents.txt" );
-            // makeSinglePDFFormContents();
+            savedContentsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), 
+                                            "pdfParser2ByMH", "FormContents.txt" );
+            fillDictSavedContents();
             doc = new pdfDocument();
             form = new System.Windows.Forms.Form();
             form.StartPosition = FormStartPosition.CenterScreen;
@@ -43,6 +46,7 @@ namespace pdfParserByMH
             form.Size = new System.Drawing.Size(800,950);
             makeSingelPDFForm();
             makeAllDokuForm();
+            makeDokuParamsForm();
             System.Windows.Forms.TabControl tabControl = new System.Windows.Forms.TabControl();
             tabControl.Size = new System.Drawing.Size(800,900);
             tabControl.Controls.Add(SinglePDFForm);
@@ -51,21 +55,21 @@ namespace pdfParserByMH
             form.AutoScroll = true;
         }
 
-        // private void makeSinglePDFFormContents()
-        // {
-        //     dictSinglePDFFormContents = new System.Collections.Generic.Dictionary<string,string>();
-        //     if(!System.IO.File.Exists(savedFormContentsPath))
-        //         return;
-        //     foreach(string line in File.ReadAllLines(savedFormContentsPath))
-        //     {
-        //         int separatorIndex = line.IndexOf('=');
-        //         if(separatorIndex < 0)
-        //             continue;
-        //         string key = line.Substring(0, separatorIndex);
-        //         string value = line.Substring(separatorIndex+1);
-        //         dictSinglePDFFormContents.Add(key, value);
-        //     }
-        // }
+        private void fillDictSavedContents()
+        {
+            dictSavedContents = new System.Collections.Generic.Dictionary<string,string>();
+            if(!System.IO.File.Exists(savedContentsPath))
+                return;
+            foreach(string line in File.ReadAllLines(savedContentsPath))
+            {
+                int separatorIndex = line.IndexOf('=');
+                if(separatorIndex < 0)
+                    continue;
+                string key = line.Substring(0, separatorIndex);
+                string value = line.Substring(separatorIndex+1);
+                dictSavedContents.Add(key, value);
+            }
+        }
 
         // private void saveFormContents()
         // {
@@ -92,6 +96,11 @@ namespace pdfParserByMH
                         break;
                     case StempelOptions.DoSingelPDF:
                         singlePDFStempeln();
+                        break;
+                    case StempelOptions.AdjustDokuParams:
+                        DialogResult resultFromDokuParams = DokuParamsForm.ShowDialog();
+                        if(resultFromDokuParams == DialogResult.OK)
+                            Console.WriteLine("OK on DokuParamsForm");
                         break;
                     default:
                         break;
@@ -120,30 +129,8 @@ namespace pdfParserByMH
             uploadFolderPath = subDirectories[0];
             getDokuID();
             getDokuRev();
-        }
-
-        private void stempelnADB(string filePath, string fileName, string outPath)
-        {
-            string ADBRev = getADBRev(fileName);
-            string header = string.Format("A. ADB Rev.{0},\nDoku-ID: {1} Rev.{2}", ADBRev, dokuID, dokuRev);
-            string footer = "Das Original ist an dieser Stelle rot gestempelt.";
-            double[] color = new double[] {1, 0, 0};
-            int[] verticalPages = new int[] {1, 2, 3};
-            doc.setOutputPath(outPath);
-            doc.setFilePath(filePath);
-            doc.stempeln(header, footer, PageXPosition.Right, PageXPosition.Left, "/Helvetica", 12, color, 0.9, PageQuantifiers.NoneExceptArray, PageQuantifiers.AllExceptArray, verticalPages, verticalPages);
-            doc.write();
-        }
-
-        private void stempelnOther(string filePath, string outPath)
-        {
-            string header = dokuID;
-            string footer = "Seite /PageNum von /PagesCount";
-            double[] color = new double[] {0, 0, 0};
-            doc.setOutputPath(outPath);
-            doc.setFilePath(filePath);
-            doc.stempeln(header, footer, PageXPosition.Middle, PageXPosition.Right, "/Helvetica", 12, color, 0.9);
-            doc.write();
+            if(dictDocs["Abfalldatenblatt"].box.Checked)
+                getADBRev();
         }
 
         private void getDokuID()
@@ -180,21 +167,22 @@ namespace pdfParserByMH
             dokuRev = matches[0].Groups["rev"].Value;
         }
 
-        private string getADBRev(string filePath)
+        private bool getADBRev()
         {
+            PathAndBox docData = dictDocs["Abfalldatenblatt"];
+            string[] ADBFilePaths = Directory.GetFiles(Path.Combine(uploadFolderPath, docData.folderName), docData.fileApproxName, SearchOption.TopDirectoryOnly);
+            if(ADBFilePaths.Length != 1)
+                return false;
+            
             string pattern = "Rev.(?<rev>\\d+)$";
-            System.Text.RegularExpressions.Regex regDokuID = new System.Text.RegularExpressions.Regex(pattern);
-            var matches = regDokuID.Matches(filePath);
-            if(matches.Count == 0)
-            {
-                System.Console.WriteLine("Warning in FrontEndProgram.getADBRev(): No ADBRev-match found in ADB-FilePath! -> using ADBRev = 0");
-                return "0";
-            }
-            if(matches.Count > 1)
-            {
-                throw new SystemException("Error in FrontEndProgram.getADBRev(): More than 1 ADBRev-matches found in ADB-FilePath!");
-            }
-            return matches[0].Groups["rev"].Value;
+            string ADBFileName = Path.GetFileNameWithoutExtension(ADBFilePaths[0]);
+            System.Text.RegularExpressions.Regex regRev = new System.Text.RegularExpressions.Regex(pattern);
+            var matches = regRev.Matches(ADBFileName);
+            if(matches.Count != 1)
+                return false;
+
+            ADBRev = matches[0].Groups["rev"].Value;
+            return true;
         }
 
         private void allDokuStempeln()
@@ -202,6 +190,7 @@ namespace pdfParserByMH
             prepare_AllDokuStempeln();
 
             System.Collections.Generic.List<string> lstMissedFiles = new System.Collections.Generic.List<string>();
+            bool overrideFiles = ((CheckBox)AllDokuForm.Controls["Override_Files"]).Checked;
             foreach(string docName in dictDocs.Keys)
             {
                 bool isChecked = dictDocs[docName].box.Checked;
@@ -209,35 +198,34 @@ namespace pdfParserByMH
                     continue;
                 System.Console.WriteLine(string.Format("Now Stempeln: {0}", docName));
                 string subFolderName = dictDocs[docName].folderName;
-                string fileNameWildcard = dictDocs[docName].fileName;
+                string fileNameWildcard = dictDocs[docName].fileApproxName;
                 string[] filePaths = System.IO.Directory.GetFiles(System.IO.Path.Combine(uploadFolderPath, subFolderName) , fileNameWildcard, System.IO.SearchOption.TopDirectoryOnly);
                 if(filePaths.Length == 0)
                 {
-                    System.Console.WriteLine(string.Format("Warning in FrontEndProgram.stempeln(): Could not find any File like {0}", fileNameWildcard));
+                    Console.WriteLine(string.Format("Warning in AllDokuStempeln(): Could not find any File like {0}", fileNameWildcard));
                     lstMissedFiles.Add(docName);
                     continue;
                 }
                 if(filePaths.Length > 1)
                 {
-                    System.Console.WriteLine("Warning in FrontEndProgram.stempeln(): More than one File found!");
+                    Console.WriteLine("Warning in AllDokuStempeln(): More than one File found!");
                 }
-                string dirGestempelt = System.IO.Path.Combine(uploadFolderPath, subFolderName, "gestempelt");
+                string dirGestempelt = Path.Combine(uploadFolderPath, subFolderName, "gestempelt");
                 foreach(string filePath in filePaths)
                 {
-                    string fileName = System.IO.Path.GetFileName(filePath);
-                    if(!System.IO.Directory.Exists(dirGestempelt))
+                     string outPath;
+                    if(overrideFiles)
                     {
-                        System.IO.Directory.CreateDirectory(dirGestempelt);
-                    }
-                    string filePathGestempelt = System.IO.Path.Combine(dirGestempelt, fileName);
-                    if(docName == "Abfalldatenblatt")
-                    {
-                        stempelnADB(filePath, fileName, filePathGestempelt);
+                       outPath = filePath;
                     }
                     else
                     {
-                        stempelnOther(filePath, filePathGestempelt);
+                        if(!Directory.Exists(dirGestempelt))
+                            Directory.CreateDirectory(dirGestempelt);
+                        outPath = Path.Combine(dirGestempelt, Path.GetFileName(filePath));
                     }
+                    if(!stempelDokuDoc(docName, filePath, outPath))
+                        lstMissedFiles.Add(docName);
                 }
             }
             if(lstMissedFiles.Count > 0)
@@ -250,6 +238,37 @@ namespace pdfParserByMH
             {
                 System.Console.WriteLine("Success! All requested Files are gestempelt.");
             }
+        }
+
+        private bool stempelDokuDoc(string docName, string filePath, string outPath)
+        {
+            PathAndBox docData = dictDocs[docName];
+            string header = insertPlaceHolders(docData.header);
+            string footer = insertPlaceHolders(docData.footer);
+            try
+            {
+                doc.setFilePath(filePath);
+                doc.setOutputPath(outPath);
+                doc.stempeln(header, footer, docData.headerXPos, docData.footerXPos, "/Helvetica", 12, docData.textColor, docData.scaleFactor, 
+                            docData.vertPagesQuatifier, docData.horiPagesQuantifier, docData.vertPagesNumbers, docData.horiPagesNumbers);
+                doc.write();
+            }
+            catch(Exception exc)
+            {
+                string message = string.Format("Die Datei {0} kann leider nicht gestempelt werden!\nEs gibt folgenden Fehler bei der PDF-Behandlung:\n\n{1}", 
+                                            Path.GetFileName(filePath), exc.Message);
+                MessageBox.Show(message, "Fehler", MessageBoxButtons.OK);
+                return false;
+            }
+            return true;
+        }
+
+        private string insertPlaceHolders(string txt)
+        {
+            string newTxt = Regex.Replace(txt,"/DokuID",dokuID);
+            newTxt = Regex.Replace(newTxt, "/Doku_Rev", dokuRev);
+            newTxt = Regex.Replace(newTxt, "/ADB_Rev", ADBRev);
+            return newTxt;
         }
 
         private void singlePDFStempeln()
@@ -302,7 +321,8 @@ namespace pdfParserByMH
             }
             catch(Exception exc)
             {
-                string message = string.Format("Die Datei {0} kann leider nicht gestempelt werden!\nEs gibt folgenden Fehler bei der PDF-Behandlung:\n\n{1}", fileName, exc.Message);
+                string message = string.Format("Die Datei {0} kann leider nicht gestempelt werden!\nEs gibt folgenden Fehler bei der PDF-Behandlung:\n\n{1}", 
+                                            Path.GetFileName(filePath), exc.Message);
                 MessageBox.Show(message, "Fehler", MessageBoxButtons.OK);
             }
         }
