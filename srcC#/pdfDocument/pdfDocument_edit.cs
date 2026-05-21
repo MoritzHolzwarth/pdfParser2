@@ -8,7 +8,7 @@ namespace pdfParserByMH
     public sealed partial class pdfDocument
     {
         public bool stempeln(string headerText, string footerText, PageXPosition headerX, PageXPosition footerX, string fontName, int fontSize, double[] fontColor, 
-                            double scaleFactor = 1, PageQuantifiers forceVertical = PageQuantifiers.None, PageQuantifiers forceHorizontal = PageQuantifiers.None, 
+                            double scaleFactor = 1, PageQuantifiers forceVertical = PageQuantifiers.Null, PageQuantifiers forceHorizontal = PageQuantifiers.Null, 
                             int[] specificVerticalPages = null, int[] specificHorizontalPages = null, int xDistance = 20, int yDistance = 20)
         {
             System.Console.Error.WriteLine("pdfDocument started stempeln");
@@ -95,7 +95,7 @@ namespace pdfParserByMH
         }
 
         public void addHeaderAndFooterToAllPages(string headerText, string footerText, PageXPosition headerX, PageXPosition footerX, string fontName, int fontSize, 
-                                                double[] fontColor, PageQuantifiers forceVertical = PageQuantifiers.None, PageQuantifiers forceHorizontal = PageQuantifiers.None, 
+                                                double[] fontColor, PageQuantifiers forceVertical = PageQuantifiers.Null, PageQuantifiers forceHorizontal = PageQuantifiers.Null, 
                                                 int[] specificVerticalPages = null, int[] specificHorizontalPages = null, int xDistance = 20, int yDistance = 20)
         {
             System.Collections.Generic.HashSet<int> setSpecificVerticalPages = new System.Collections.Generic.HashSet<int>();
@@ -121,9 +121,6 @@ namespace pdfParserByMH
                 bool makeHorizontal = false;
                 switch (forceVertical)
                 {
-                    case PageQuantifiers.All:
-                        makeVertical = true;
-                        break;
                     case PageQuantifiers.AllExceptArray:
                         if(!setSpecificVerticalPages.Contains(num))
                             makeVertical = true;
@@ -137,9 +134,6 @@ namespace pdfParserByMH
                 }
                 switch (forceHorizontal)
                 {
-                    case PageQuantifiers.All:
-                        makeHorizontal = true;
-                        break;
                     case PageQuantifiers.AllExceptArray:
                         if(!setSpecificHorizontalPages.Contains(num))
                             makeHorizontal = true;

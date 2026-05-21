@@ -5,8 +5,11 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.IO;
+using System.Linq;
 using System.Runtime.ConstrainedExecution;
+using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
@@ -22,7 +25,7 @@ namespace pdfParserByMH
         System.Windows.Forms.Form form;
         StempelOptions stempelOption = StempelOptions.Null;
         System.Windows.Forms.TabPage AllDokuForm;
-        System.Collections.Generic.Dictionary<string, PathAndBox> dictDocs;
+        System.Collections.Generic.Dictionary<string, DocData> dictDocs;
         System.Windows.Forms.TabPage SinglePDFForm;
         Form DokuParamsForm;
         pdfDocument doc;
@@ -62,7 +65,7 @@ namespace pdfParserByMH
                 return;
             foreach(string line in File.ReadAllLines(savedContentsPath))
             {
-                int separatorIndex = line.IndexOf('=');
+                int separatorIndex = line.IndexOf(" : ");
                 if(separatorIndex < 0)
                     continue;
                 string key = line.Substring(0, separatorIndex);
@@ -71,16 +74,16 @@ namespace pdfParserByMH
             }
         }
 
-        // private void saveFormContents()
-        // {
-        //     string dirName = Path.GetDirectoryName(savedFormContentsPath);
-        //     if(!Directory.Exists(dirName))
-        //         Directory.CreateDirectory(dirName);
-        //     List<string> arrLines = new List<string>(dictSinglePDFFormContents.Count);
-        //     foreach(KeyValuePair<string,string> kvp in dictSinglePDFFormContents)
-        //         arrLines.Add(string.Format("{0}={1}", kvp.Key, kvp.Value));
-        //     File.WriteAllLines(savedFormContentsPath, arrLines.ToArray());
-        // }
+        private void saveFormContents()
+        {
+            string dirName = Path.GetDirectoryName(savedContentsPath);
+            if(!Directory.Exists(dirName))
+                Directory.CreateDirectory(dirName);
+            List<string> arrLines = new List<string>(dictSavedContents.Count);
+            foreach(KeyValuePair<string,string> kvp in dictSavedContents)
+                arrLines.Add(string.Format("{0} : {1}", kvp.Key, kvp.Value));
+            File.WriteAllLines(savedContentsPath, arrLines.ToArray());
+        }
 
         public void run()
         {
@@ -98,17 +101,92 @@ namespace pdfParserByMH
                         singlePDFStempeln();
                         break;
                     case StempelOptions.AdjustDokuParams:
-                        DialogResult resultFromDokuParams = DokuParamsForm.ShowDialog();
-                        if(resultFromDokuParams == DialogResult.OK)
-                            Console.WriteLine("OK on DokuParamsForm");
+                        adjustDokuParams();
                         break;
                     default:
                         break;
                 }
                 result = form.ShowDialog();
             }
-            // saveFormContents();
+            saveFormContents();
         }
+
+        private void adjustDokuParams()
+        {
+            List<DocData> selectedDocDatas = new List<DocData>();
+            foreach(DocData docdata in dictDocs.Values)
+            {
+                if(docdata.box.Checked)
+                    selectedDocDatas.Add(docdata);
+            }
+            if(selectedDocDatas.Count == 0)
+            {
+                string message = "Wählen Sie mindestend einen Dokumententyp aus, um die Parameter anzupassen.";
+                MessageBox.Show(message, "Keine Auswahl getroffen", MessageBoxButtons.OK);
+                return;
+            }
+            if(selectedDocDatas.Count > 1)
+                fillDokuParamsForm();
+            else
+                fillDokuParamsForm(selectedDocDatas[0]);
+
+            DialogResult resultFromDokuParams = DokuParamsForm.ShowDialog();
+            if(resultFromDokuParams != DialogResult.OK)
+                return;
+            Dictionary<Type,DocProperty> dictNewProps = readNewDokuParams();
+            foreach(string docName in dictDocs.Keys)
+            {
+
+                Dictionary<Type,DocProperty> dictProps = dictDocs[docName].dictDocProperties;
+                foreach(KeyValuePair<Type,DocProperty> kvp in dictNewProps)
+                {
+                    string storeKey = docName + "_" + kvp.Key.ToString();
+                    string storeVal = docPropertyToString(kvp.Value);
+                    dictSavedContents[storeKey] = storeVal;
+                    dictProps[kvp.Key] = kvp.Value;
+                }
+            }
+        }
+
+        private string docPropertyToString(DocProperty docprop)
+        {
+            Type type = docprop.GetType();
+            if(type.IsSubclassOf(typeof(DocStringProperty)))
+                return ((DocStringProperty)docprop).value;
+            else if(type.IsSubclassOf(typeof(DocPageXPosProperty)))
+                return ((DocPageXPosProperty)docprop).value.ToString();
+            else if(type.IsSubclassOf(typeof(DocPageXPosProperty)))
+                return ((DocPageXPosProperty)docprop).value.ToString();
+            else if(type.IsSubclassOf(typeof(DocPageQuantifierProperty)))
+                return ((DocPageQuantifierProperty)docprop).value.ToString();
+            else if(type.IsSubclassOf(typeof(DocIntArrayProperty)))
+                return string.Join(",",((DocIntArrayProperty)docprop).value);
+            else if(type == typeof(DocScaleFactor))
+                return ((DocScaleFactor)docprop).value.ToString();
+            else if(type == typeof(DocTextColor))
+                return string.Join(",",((DocTextColor)docprop).value);
+            else
+                throw new System.Exception(string.Format("Error in docPropertyToString(): Unknown DocProperty {0}", type.ToString()));
+        }
+        
+        private Dictionary<Type,DocProperty> readNewDokuParams()
+        {
+            IEnumerable<Type> docPropTypes = System.Reflection.Assembly.GetExecutingAssembly()
+                .GetTypes()
+                .Where(t => t.IsSubclassOf(typeof(DocProperty)));
+            
+            Dictionary<Type,DocProperty> dictNewProps = new Dictionary<Type, DocProperty>();
+            foreach(Type typ in docPropTypes)
+            {
+                var constructor = typ.GetConstructors()[0];
+                var defaultArgs = constructor.GetParameters().Select(p => p.DefaultValue).ToArray();
+                DocProperty docProp = (DocProperty)constructor.Invoke(defaultArgs);
+                if(docProp.read(DokuParamsForm))
+                    dictNewProps.Add(typ,docProp);
+            }
+            return dictNewProps;
+        }
+
 
         private void prepare_AllDokuStempeln()
         {
@@ -169,7 +247,7 @@ namespace pdfParserByMH
 
         private bool getADBRev()
         {
-            PathAndBox docData = dictDocs["Abfalldatenblatt"];
+            DocData docData = dictDocs["Abfalldatenblatt"];
             string[] ADBFilePaths = Directory.GetFiles(Path.Combine(uploadFolderPath, docData.folderName), docData.fileApproxName, SearchOption.TopDirectoryOnly);
             if(ADBFilePaths.Length != 1)
                 return false;
@@ -242,7 +320,7 @@ namespace pdfParserByMH
 
         private bool stempelDokuDoc(string docName, string filePath, string outPath)
         {
-            PathAndBox docData = dictDocs[docName];
+            DocData docData = dictDocs[docName];
             string header = insertPlaceHolders(docData.header);
             string footer = insertPlaceHolders(docData.footer);
             try
@@ -250,7 +328,7 @@ namespace pdfParserByMH
                 doc.setFilePath(filePath);
                 doc.setOutputPath(outPath);
                 doc.stempeln(header, footer, docData.headerXPos, docData.footerXPos, "/Helvetica", 12, docData.textColor, docData.scaleFactor, 
-                            docData.vertPagesQuatifier, docData.horiPagesQuantifier, docData.vertPagesNumbers, docData.horiPagesNumbers);
+                            docData.vertPagesQuantifier, docData.horiPagesQuantifier, docData.vertPagesNumbers, docData.horiPagesNumbers);
                 doc.write();
             }
             catch(Exception exc)
@@ -278,7 +356,6 @@ namespace pdfParserByMH
                 throw new System.Exception(string.Format("Error in singlePDFStempeln(): File does not exist! {0}", filePath));
             if(filePath.Substring(filePath.Length-4, 4) != ".pdf")
                 throw new System.Exception(string.Format("Error in singlePDFStempeln(): File is not PDF! {0}", filePath));
-            // dictSinglePDFFormContents["SinglePDF_FilePath"] = filePath;
             
             bool overrideFile = ((CheckBox)SinglePDFForm.Controls["Override_File"]).Checked;
             string fileName = System.IO.Path.GetFileNameWithoutExtension(filePath);
@@ -286,7 +363,6 @@ namespace pdfParserByMH
             string outPath = overrideFile ? filePath : System.IO.Path.Combine(folder, string.Format("{0}_gestempelt.pdf", fileName));
             
             string header = SinglePDFForm.Controls["SinglePDF_Header"].Text;
-            // dictSinglePDFFormContents["SinglePDF_Header"] = header;
             header = header.Replace("\r", "");
             string footer = SinglePDFForm.Controls["SinglePDF_Footer"].Text;
             footer = footer.Replace("\r", "");
@@ -299,12 +375,15 @@ namespace pdfParserByMH
 
             ValueTuple<PageQuantifiers, int[]> vertPageSettings = getPageQuantifierForOrientation(box_vertical);
             ValueTuple<PageQuantifiers, int[]> horiPageSettings = getPageQuantifierForOrientation(box_horizontal);
-            PageXPosition headerXPos = getPageXPosition(box_headerXPos);
-            PageXPosition footerXPos = getPageXPosition(box_footerXPos);
+            PageXPosition headerXPos = getPageXPositionFromBox(box_headerXPos);
+            PageXPosition footerXPos = getPageXPositionFromBox(box_footerXPos);
 
             double scaleFactor;
             if(!double.TryParse(tb_scaleFactor.Text, out scaleFactor))
                 throw new System.Exception(string.Format("Error in singlePDFStempeln(): Invalid Scale Factor Format! {0}", tb_scaleFactor.Text));
+
+            if(scaleFactor < 0)
+                throw new System.Exception(string.Format("Error in singlePDFStempeln(): Negative Scale Factor Value: {0}", tb_scaleFactor.Text));
 
             string colorHex = ((Label)SinglePDFForm.Controls["ColorName"]).Text;
             Color col = ColorTranslator.FromHtml(colorHex);
@@ -327,7 +406,7 @@ namespace pdfParserByMH
             }
         }
 
-        private ValueTuple<PageQuantifiers, int[]> getPageQuantifierForOrientation(GroupBox box)
+        static public ValueTuple<PageQuantifiers, int[]> getPageQuantifierForOrientation(GroupBox box)
         {
             bool allExceptArray = false;
             bool noneExceptArray = false;
@@ -370,22 +449,48 @@ namespace pdfParserByMH
             }
             if(allExceptArray)
             {
-                if(numPages == 0)
-                    return new ValueTuple<PageQuantifiers,int[]>(PageQuantifiers.All, null);
-                else
-                    return new ValueTuple<PageQuantifiers,int[]>(PageQuantifiers.AllExceptArray, arrPageNumbers);
+                return new ValueTuple<PageQuantifiers,int[]>(PageQuantifiers.AllExceptArray, arrPageNumbers);
             }
             else if(noneExceptArray)
             {
-                if(numPages == 0)
-                    return new ValueTuple<PageQuantifiers,int[]>(PageQuantifiers.None, null);
-                else
-                    return new ValueTuple<PageQuantifiers,int[]>(PageQuantifiers.NoneExceptArray, arrPageNumbers);
+                return new ValueTuple<PageQuantifiers,int[]>(PageQuantifiers.NoneExceptArray, arrPageNumbers);
             }
             throw new System.Exception("Error in getPageQuantifierForOrientation(): No possible Option Selected!");
         }
 
-        private PageXPosition getPageXPosition(GroupBox box)
+        static public PageQuantifiers getPageQuantifierFromBox(GroupBox box)
+        {
+            bool allExceptArray = false;
+            bool noneExceptArray = false;
+            foreach(var cont in box.Controls)
+            {
+                if(cont is RadioButton)
+                {
+                    RadioButton rb = (RadioButton)cont;
+                    switch (rb.Name)
+                    {
+                        case "RB_AllExceptArray":
+                            allExceptArray = rb.Checked;
+                            break;
+                        case "RB_NoneExceptArray":
+                            noneExceptArray = rb.Checked;
+                            break;
+                        default:
+                            throw new System.Exception(string.Format("Error in getPageQuantifierForOrientation(): Unknown RadioButton Name! {0}", rb.Name));
+                    }
+                }
+            }
+            if(allExceptArray && noneExceptArray)
+                throw new System.Exception("Error in etPageQuantifierFromBox(): Both Quantifier-Options selected! Invalid!");
+            else if(allExceptArray)
+                return PageQuantifiers.AllExceptArray;
+            else if(noneExceptArray)
+                return PageQuantifiers.NoneExceptArray;
+            else
+                return PageQuantifiers.Null;
+        }
+
+        static public PageXPosition getPageXPositionFromBox(GroupBox box)
         {
             foreach(var cont in box.Controls)
             {
@@ -407,7 +512,7 @@ namespace pdfParserByMH
                     }
                 }
             }
-            throw new System.Exception("Error in getPageXPosition(): No X-Position given!");
+            return PageXPosition.Null;
         }
     }
 }

@@ -1,45 +1,100 @@
 ﻿
 using System;
+using System.CodeDom;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.Xml.Serialization;
 
+
 namespace pdfParserByMH
 {
-    public class PathAndBox
+
+    public class DocData
     {
-        public string fileApproxName {get; set;}
-        public string folderName {get; set;}
-        public string header {get; set;}
-        public string footer {get; set;}
-        public PageXPosition headerXPos {get; set;}
-        public PageXPosition footerXPos {get; set;}
-        public PageQuantifiers vertPagesQuatifier;
-        public PageQuantifiers horiPagesQuantifier;
-        public int[] vertPagesNumbers {get; set;}
-        public int[] horiPagesNumbers {get; set;}
-        public double[] textColor {get; set;}
-        public double scaleFactor {get; set;}
-        public System.Windows.Forms.CheckBox box {get; set;}
-        public PathAndBox(string folder = "", string file = "")
+        public Dictionary<Type,DocProperty> dictDocProperties {get; set;}
+        public string folderName
         {
-            folderName = folder;
-            fileApproxName = file;
-            box = new System.Windows.Forms.CheckBox();
-            header = "";
-            footer = "";
-            headerXPos = PageXPosition.Left;
-            footerXPos = PageXPosition.Left;
-            vertPagesQuatifier = PageQuantifiers.None;
-            horiPagesQuantifier = PageQuantifiers.None;
-            vertPagesNumbers = new int[] {};
-            horiPagesNumbers = new int[] {};
-            textColor = new double[] {0,0,0};
-            scaleFactor = 1.0;
+            get {return ((DocFolderName)dictDocProperties[typeof(DocFolderName)]).value;}
+            set {((DocFolderName)dictDocProperties[typeof(DocFolderName)]).value = value;}
+        }
+        public string fileApproxName
+        {
+            get {return ((DocApproxFilename)dictDocProperties[typeof(DocApproxFilename)]).value;}
+            set {((DocApproxFilename)dictDocProperties[typeof(DocApproxFilename)]).value = value;}
+        }
+        public string header
+        {
+            get {return ((DocHeader)dictDocProperties[typeof(DocHeader)]).value;}
+            set {((DocHeader)dictDocProperties[typeof(DocHeader)]).value = value;}
+        }
+        public string footer
+        {
+            get {return ((DocFooter)dictDocProperties[typeof(DocFooter)]).value;}
+            set {((DocFooter)dictDocProperties[typeof(DocFooter)]).value = value;}
+        }
+        public PageXPosition headerXPos
+        {
+            get {return ((DocHeaderXPos)dictDocProperties[typeof(DocHeaderXPos)]).value;}
+            set {((DocHeaderXPos)dictDocProperties[typeof(DocHeaderXPos)]).value = value;}
+        }
+        public PageXPosition footerXPos
+        {
+            get {return ((DocFooterXPos)dictDocProperties[typeof(DocFooterXPos)]).value;}
+            set {((DocFooterXPos)dictDocProperties[typeof(DocFooterXPos)]).value = value;}
+        }
+        public PageQuantifiers vertPagesQuantifier
+        {
+            get {return ((DocVertPageQuantifier)dictDocProperties[typeof(DocVertPageQuantifier)]).value;}
+            set {((DocVertPageQuantifier)dictDocProperties[typeof(DocVertPageQuantifier)]).value = value;}
+        }
+        public PageQuantifiers horiPagesQuantifier
+        {
+            get {return ((DocHoriPageQuantifier)dictDocProperties[typeof(DocHoriPageQuantifier)]).value;}
+            set {((DocHoriPageQuantifier)dictDocProperties[typeof(DocHoriPageQuantifier)]).value = value;}
+        }
+        public int[] vertPagesNumbers
+        {
+            get {return ((DocVertPageNumbers)dictDocProperties[typeof(DocVertPageNumbers)]).value;}
+            set {((DocVertPageNumbers)dictDocProperties[typeof(DocVertPageNumbers)]).value = value;}
+        }
+        public int[] horiPagesNumbers
+        {
+            get {return ((DocHoriPageNumbers)dictDocProperties[typeof(DocHoriPageNumbers)]).value;}
+            set {((DocHoriPageNumbers)dictDocProperties[typeof(DocHoriPageNumbers)]).value = value;}
+        }
+        public double scaleFactor
+        {
+            get {return ((DocScaleFactor)dictDocProperties[typeof(DocScaleFactor)]).value;}
+            set {((DocScaleFactor)dictDocProperties[typeof(DocScaleFactor)]).value = value;}
+        }
+        public double[] textColor
+        {
+            get {return ((DocTextColor)dictDocProperties[typeof(DocTextColor)]).value;}
+            set {((DocTextColor)dictDocProperties[typeof(DocTextColor)]).value = value;}
+        }
+        public System.Windows.Forms.CheckBox box {get; set;}
+        public DocData(string folder = "", string file = "")
+        {
+            dictDocProperties = new Dictionary<Type, DocProperty>();
+            dictDocProperties.Add(typeof(DocFolderName), new DocFolderName(folder));
+            dictDocProperties.Add(typeof(DocApproxFilename), new DocApproxFilename(file));
+            dictDocProperties.Add(typeof(DocHeader), new DocHeader());
+            dictDocProperties.Add(typeof(DocFooter), new DocFooter());
+            dictDocProperties.Add(typeof(DocHeaderXPos), new DocHeaderXPos());
+            dictDocProperties.Add(typeof(DocFooterXPos), new DocFooterXPos());
+            dictDocProperties.Add(typeof(DocVertPageQuantifier), new DocVertPageQuantifier());
+            dictDocProperties.Add(typeof(DocHoriPageQuantifier), new DocHoriPageQuantifier());
+            dictDocProperties.Add(typeof(DocVertPageNumbers), new DocVertPageNumbers());
+            dictDocProperties.Add(typeof(DocHoriPageNumbers), new DocHoriPageNumbers());
+            dictDocProperties.Add(typeof(DocScaleFactor), new DocScaleFactor());
+            dictDocProperties.Add(typeof(DocTextColor), new DocTextColor());
+            box = new CheckBox();
         }
     }
     public partial class FrontEndProgram
@@ -53,13 +108,13 @@ namespace pdfParserByMH
 
             AllDokuForm_initCheckboxes();
             HashSet<string> setFolderNames = new HashSet<string>();
-            foreach(PathAndBox pb in dictDocs.Values)
+            foreach(DocData pb in dictDocs.Values)
             {
-                setFolderNames.Add(pb.folderName);
+                setFolderNames.Add(((DocFolderName)pb.dictDocProperties[typeof(DocFolderName)]).value);
             }
 
             int y = 10;
-            y = AllDokuForm_makeFolderPathControl(y);
+            y = AllDokuForm_makeDokuFolderPathControl(y);
             foreach(string folderName in setFolderNames)
                 y = AllDokuForm_makeFolderCheckboxes(y + 10, folderName);
             
@@ -79,7 +134,7 @@ namespace pdfParserByMH
             selectAllButton.BackColor = System.Drawing.ColorTranslator.FromHtml("#C2EAF0");
             selectAllButton.Click += (sender, e) =>
             {
-                foreach(PathAndBox docData in dictDocs.Values)
+                foreach(DocData docData in dictDocs.Values)
                     docData.box.Checked = true;
             };
             AllDokuForm.Controls.Add(selectAllButton);
@@ -107,7 +162,7 @@ namespace pdfParserByMH
             selectNoneButton.BackColor = System.Drawing.ColorTranslator.FromHtml("#C2EAF0");
             selectNoneButton.Click += (sender, e) =>
             {
-                foreach(PathAndBox docData in dictDocs.Values)
+                foreach(DocData docData in dictDocs.Values)
                     docData.box.Checked = false;
             };
             AllDokuForm.Controls.Add(selectNoneButton);
@@ -130,7 +185,7 @@ namespace pdfParserByMH
             return y;
         }
 
-        private int AllDokuForm_makeFolderPathControl(int y)
+        private int AllDokuForm_makeDokuFolderPathControl(int y)
         {
             int x = 40;
             System.Windows.Forms.Label textboxLabel = new System.Windows.Forms.Label();
@@ -195,7 +250,7 @@ namespace pdfParserByMH
             int y_boxlocal = 30;
             int labelHeight = 0;
             int distance = 20;
-            foreach(KeyValuePair<string,PathAndBox> kvp in dictDocs)
+            foreach(KeyValuePair<string,DocData> kvp in dictDocs)
             {
                 if(kvp.Value.folderName != folderName)
                     continue;
@@ -234,7 +289,7 @@ namespace pdfParserByMH
 
         private void AllDokuForm_initCheckboxes()
         {
-            dictDocs = new System.Collections.Generic.Dictionary<string, PathAndBox>();
+            dictDocs = new System.Collections.Generic.Dictionary<string, DocData>();
             fillDictDocsFromDefault();
             if(System.IO.File.Exists(savedContentsPath))
                 fillDictDocsFromSavedContents();
@@ -244,65 +299,83 @@ namespace pdfParserByMH
         {
             foreach(string docName in dictDocs.Keys)
             {
-                PathAndBox docData = dictDocs[docName];
-                if(dictSavedContents.ContainsKey(docName + "_folder"))
-                    docData.folderName = dictSavedContents[docName + "_folder"];
-                if(dictSavedContents.ContainsKey(docName + "_searchPath"))
-                    docData.fileApproxName = dictSavedContents[docName + "_searchPath"];
-                if(dictSavedContents.ContainsKey(docName + "_header"))
-                    docData.header = dictSavedContents[docName + "_header"];
-                if(dictSavedContents.ContainsKey(docName + "_footer"))
-                    docData.footer = dictSavedContents[docName + "_footer"];
-                if(dictSavedContents.ContainsKey(docName + "_headerXPos"))
-                    docData.headerXPos = getPageXPositionFromText(dictSavedContents[docName + "_headerXPos"]);
-                if(dictSavedContents.ContainsKey(docName + "_footerXPos"))
-                    docData.headerXPos = getPageXPositionFromText(dictSavedContents[docName + "_footerXPos"]);
-                if(dictSavedContents.ContainsKey(docName + "_vertPageQuatifier"))
-                    docData.vertPagesQuatifier = getPageQuantifierFromText(dictSavedContents[docName + "_vertPageQuantifier"]);
-                if(dictSavedContents.ContainsKey(docName + "_horiPageQuatifier"))
-                    docData.vertPagesQuatifier = getPageQuantifierFromText(dictSavedContents[docName + "_horiPageQuantifier"]);
-                if(dictSavedContents.ContainsKey(docName + "vertPageNumbers"))
-                    docData.vertPagesNumbers = getIntArrayFromText(dictSavedContents[docName + "vertPageNumbers"]);
-                if(dictSavedContents.ContainsKey(docName + "horiPageNumbers"))
-                    docData.vertPagesNumbers = getIntArrayFromText(dictSavedContents[docName + "horiPageNumbers"]);
-                if(dictSavedContents.ContainsKey(docName + "_textColor"))
-                    docData.textColor = getDoubleArrayFromText(dictSavedContents[docName + "_textColor"]);
-                if(dictSavedContents.ContainsKey(docName + "_scaleFactor"))
-                    docData.scaleFactor = Convert.ToDouble(dictSavedContents[docName + "_scaleFactor"]);
+                Dictionary<Type, DocProperty> dictProperties = dictDocs[docName].dictDocProperties;
+                foreach(Type propType in dictProperties.Keys)
+                {
+                    string propName = docName + "_" + propType.ToString();
+                    if(dictSavedContents.ContainsKey(propName))
+                    {
+                        string propText = dictSavedContents[propName];
+                        dictProperties[propType] = getDocPropertyFromText(propType, propText);
+                    }       
+                }
             }
+        }
+
+        private DocProperty getDocPropertyFromText(Type type, string txt)
+        {
+            object prop;
+            if(type.IsSubclassOf(typeof(DocStringProperty)))
+            {
+                prop = Activator.CreateInstance(type, txt);
+            }
+            else if(type == typeof(DocHeaderXPos) || type == typeof(DocFooterXPos))
+            {
+                prop = Activator.CreateInstance(type, getPageXPositionFromText(txt));
+            }
+            else if(type == typeof(DocVertPageQuantifier) || type == typeof(DocHoriPageQuantifier))
+            {
+                prop = Activator.CreateInstance(type, getPageQuantifierFromText(txt));
+            }
+            else if(type == typeof(DocVertPageNumbers) || type == typeof(DocHoriPageNumbers))
+            {
+                prop = Activator.CreateInstance(type, getIntArrayFromText(txt));
+            }
+            else if(type == typeof(DocScaleFactor))
+            {
+                prop = Activator.CreateInstance(type, getDoubleFromText(txt));
+            }
+            else if(type == typeof(DocTextColor))
+            {
+                prop = Activator.CreateInstance(type, getDoubleArrayFromRGBColorText(txt));
+            }
+            else
+                throw new System.Exception(string.Format("Error in getDocPropertyFromText(): Unknown Type {0}!", type.ToString()));
+            
+            return (DocProperty)prop;
         }
 
         private void fillDictDocsFromDefault()
         {   
-            dictDocs.Add("Abfalldatenblatt",new PathAndBox("A", "A. ADB APG0*.pdf"));
-            dictDocs.Add("Repräs. Begleitschein",new PathAndBox("B.1", "B.1 Repräsentative* Begleitschein*_Rev.*.pdf"));
-            dictDocs.Add("Verarbeitungsweg",new PathAndBox("B.1", "B.1 Verarbeitungsweg*_Rev.*.pdf"));
-            dictDocs.Add("Deklarationsvorschriften",new PathAndBox("B.1", "B.1 Deklarationsvorschrift*_Rev.*.pdf"));
-            dictDocs.Add("Gamma-Analyse",new PathAndBox("B.1", "B.1 Gamma-Analyse*_Rev.*.pdf"));
-            dictDocs.Add("LSC-Analyse",new PathAndBox("B.1", "B.1 LSC-Analyse*_Rev.*.pdf"));
-            dictDocs.Add("Chargenfreigabe",new PathAndBox("C.1", "C.1 Chargenfreigabe*_Rev.*.pdf"));
-            dictDocs.Add("Fassmessprotokolle",new PathAndBox("C.1", "C.1 Fassmessprotokoll*_Rev.*.pdf"));
-            dictDocs.Add("Gasphasenanalyse",new PathAndBox("C.1", "C.1 Gasphasenanalyse*_Rev.*.pdf"));
-            dictDocs.Add("Prüfprotokoll",new PathAndBox("C.1", "C.1 Prüfprotokoll*_Rev.*.pdf"));
-            dictDocs.Add("Trocknungsprotokolle",new PathAndBox("C.1", "C.1 Trocknungsprotokoll*_Rev.*.pdf"));
-            dictDocs.Add("Trocknungsnachweis",new PathAndBox("C.1", "C.1 Nachweis Trocknungserfolg*_Rev.*.pdf"));
-            dictDocs.Add("Wiegescheine",new PathAndBox("C.1", "C.1 Wiegeschein*.pdf"));
-            dictDocs.Add("Fotodokumentation",new PathAndBox("C.1", "C.1 Fotodokumentation_Rev.*.pdf"));
-            dictDocs.Add("Inspektionsbericht",new PathAndBox("C.1", "C.1 Inspektionsbericht*_Rev.*.pdf"));
-            dictDocs.Add("Verdampferkonzentratanalyse",new PathAndBox("C.1", "C.1 Analyse* Verdampferkonzentrat*_Rev.*.pdf"));
-            dictDocs.Add("Klärschlammanalyse",new PathAndBox("C.1", "C.1 Klärschlamm-Analyse* (FSC)_Rev.*.pdf"));
-            dictDocs.Add("PSC-Zerlegung",new PathAndBox("C.1", "C.1 PSC-Zerlegung_Rev.*.pdf"));
-            dictDocs.Add("Ablaufplan",new PathAndBox("C.1", "C.1 Ablaufpl*n*_Rev.*.pdf"));
-            dictDocs.Add("Querkontamination",new PathAndBox("D.2", "D.2 Querkontamination_Rev.*.pdf"));
-            dictDocs.Add("Gammamessung Rados",new PathAndBox("D.2", "D.2 Gammamessung* Rados_Rev.*.pdf"));
-            dictDocs.Add("Prüfbericht Druckfestigkeit",new PathAndBox("D.2", "D.2 Prüfbericht* Druckfestigkeit_Rev.*.pdf"));
-            dictDocs.Add("Prüfbericht Zementierfähigkeit",new PathAndBox("D.2", "D.2 Prüfbericht* Zementierfähigkeit_Rev.*.pdf"));
-            dictDocs.Add("TNE-Stellungnahme NDKL",new PathAndBox("D.2", "D.2 TNE-Stellungnahme* NDKL*_Rev.*.pdf"));
-            dictDocs.Add("Verifizierung NDKL C-Altchargen",new PathAndBox("D.2", "D.2 Verifizierung der NDKL der C-Altchargen_Rev.*.pdf"));
-            dictDocs.Add("Behälterabnahme",new PathAndBox("D.3", "D.3 Abnahme Behälter_Rev.*.pdf"));
-            dictDocs.Add("Reparaturen",new PathAndBox("D.3", "D.3 Reparaturen_Rev.*.pdf"));
+            dictDocs.Add("Abfalldatenblatt",new DocData("A", "A. ADB APG0*.pdf"));
+            dictDocs.Add("Repräs. Begleitschein",new DocData("B.1", "B.1 Repräsentative* Begleitschein*_Rev.*.pdf"));
+            dictDocs.Add("Verarbeitungsweg",new DocData("B.1", "B.1 Verarbeitungsweg*_Rev.*.pdf"));
+            dictDocs.Add("Deklarationsvorschriften",new DocData("B.1", "B.1 Deklarationsvorschrift*_Rev.*.pdf"));
+            dictDocs.Add("Gamma-Analyse",new DocData("B.1", "B.1 Gamma-Analyse*_Rev.*.pdf"));
+            dictDocs.Add("LSC-Analyse",new DocData("B.1", "B.1 LSC-Analyse*_Rev.*.pdf"));
+            dictDocs.Add("Chargenfreigabe",new DocData("C.1", "C.1 Chargenfreigabe*_Rev.*.pdf"));
+            dictDocs.Add("Fassmessprotokolle",new DocData("C.1", "C.1 Fassmessprotokoll*_Rev.*.pdf"));
+            dictDocs.Add("Gasphasenanalyse",new DocData("C.1", "C.1 Gasphasenanalyse*_Rev.*.pdf"));
+            dictDocs.Add("Prüfprotokoll",new DocData("C.1", "C.1 Prüfprotokoll*_Rev.*.pdf"));
+            dictDocs.Add("Trocknungsprotokolle",new DocData("C.1", "C.1 Trocknungsprotokoll*_Rev.*.pdf"));
+            dictDocs.Add("Trocknungsnachweis",new DocData("C.1", "C.1 Nachweis Trocknungserfolg*_Rev.*.pdf"));
+            dictDocs.Add("Wiegescheine",new DocData("C.1", "C.1 Wiegeschein*.pdf"));
+            dictDocs.Add("Fotodokumentation",new DocData("C.1", "C.1 Fotodokumentation_Rev.*.pdf"));
+            dictDocs.Add("Inspektionsbericht",new DocData("C.1", "C.1 Inspektionsbericht*_Rev.*.pdf"));
+            dictDocs.Add("Verdampferkonzentratanalyse",new DocData("C.1", "C.1 Analyse* Verdampferkonzentrat*_Rev.*.pdf"));
+            dictDocs.Add("Klärschlammanalyse",new DocData("C.1", "C.1 Klärschlamm-Analyse* (FSC)_Rev.*.pdf"));
+            dictDocs.Add("PSC-Zerlegung",new DocData("C.1", "C.1 PSC-Zerlegung_Rev.*.pdf"));
+            dictDocs.Add("Ablaufplan",new DocData("C.1", "C.1 Ablaufpl*n*_Rev.*.pdf"));
+            dictDocs.Add("Querkontamination",new DocData("D.2", "D.2 Querkontamination_Rev.*.pdf"));
+            dictDocs.Add("Gammamessung Rados",new DocData("D.2", "D.2 Gammamessung* Rados_Rev.*.pdf"));
+            dictDocs.Add("Prüfbericht Druckfestigkeit",new DocData("D.2", "D.2 Prüfbericht* Druckfestigkeit_Rev.*.pdf"));
+            dictDocs.Add("Prüfbericht Zementierfähigkeit",new DocData("D.2", "D.2 Prüfbericht* Zementierfähigkeit_Rev.*.pdf"));
+            dictDocs.Add("TNE-Stellungnahme NDKL",new DocData("D.2", "D.2 TNE-Stellungnahme* NDKL*_Rev.*.pdf"));
+            dictDocs.Add("Verifizierung NDKL C-Altchargen",new DocData("D.2", "D.2 Verifizierung der NDKL der C-Altchargen_Rev.*.pdf"));
+            dictDocs.Add("Behälterabnahme",new DocData("D.3", "D.3 Abnahme Behälter_Rev.*.pdf"));
+            dictDocs.Add("Reparaturen",new DocData("D.3", "D.3 Reparaturen_Rev.*.pdf"));
             
-            foreach(KeyValuePair<string,PathAndBox> kvp in dictDocs)
+            foreach(KeyValuePair<string,DocData> kvp in dictDocs)
             {
                 if(kvp.Key == "Abfalldatenblatt")
                 {
@@ -310,7 +383,7 @@ namespace pdfParserByMH
                     kvp.Value.footer = "Das Original ist an dieser Stelle rot gestempelt.";
                     kvp.Value.headerXPos = PageXPosition.Middle;
                     kvp.Value.footerXPos = PageXPosition.Left;
-                    kvp.Value.vertPagesQuatifier = PageQuantifiers.NoneExceptArray;
+                    kvp.Value.vertPagesQuantifier = PageQuantifiers.NoneExceptArray;
                     kvp.Value.vertPagesNumbers = new int[] {1, 2};
                     kvp.Value.horiPagesQuantifier = PageQuantifiers.NoneExceptArray;
                     kvp.Value.horiPagesNumbers = new int[] {};
@@ -323,7 +396,7 @@ namespace pdfParserByMH
                     kvp.Value.footer = "Seite /PageNum von /PagesCount";
                     kvp.Value.headerXPos = PageXPosition.Middle;
                     kvp.Value.footerXPos = PageXPosition.Right;
-                    kvp.Value.vertPagesQuatifier = PageQuantifiers.NoneExceptArray;
+                    kvp.Value.vertPagesQuantifier = PageQuantifiers.NoneExceptArray;
                     kvp.Value.vertPagesNumbers = new int[] {};
                     kvp.Value.horiPagesQuantifier = PageQuantifiers.NoneExceptArray;
                     kvp.Value.horiPagesNumbers = new int[] {};
@@ -352,10 +425,6 @@ namespace pdfParserByMH
         {
             switch (txt)
             {
-                case "None":
-                    return PageQuantifiers.None;
-                case "All":
-                    return PageQuantifiers.All;
                 case "NoneExceptArray":
                     return PageQuantifiers.NoneExceptArray;
                 case "AllExceptArray":
@@ -365,7 +434,7 @@ namespace pdfParserByMH
             }
         }
 
-        private int[] getIntArrayFromText(string txt)
+        public static int[] getIntArrayFromText(string txt)
         {
             string[] arrTxt = txt.Split(separator: new char[] {','}, options: StringSplitOptions.RemoveEmptyEntries);
             int[] arrInts = new int[arrTxt.Length];
@@ -376,7 +445,7 @@ namespace pdfParserByMH
             return arrInts;
         }
 
-        private double[] getDoubleArrayFromText(string txt)
+        private double[] getDoubleArrayFromRGBColorText(string txt)
         {
             string[] arrTxt = txt.Split(separator: new char[] {','}, options: StringSplitOptions.RemoveEmptyEntries);
             double[] arrDoubles = new double[arrTxt.Length];
@@ -385,6 +454,22 @@ namespace pdfParserByMH
                 arrDoubles[i] = Convert.ToDouble(arrTxt[i]);
             }
             return arrDoubles;
+        }
+        
+        public static double getDoubleFromText(string txt)
+        {
+            double val;
+            if(!double.TryParse(txt, out val))
+                throw new System.Exception("Error in getDoubleFromText(): Scale Factor cannot be converted to Double!");
+            return val;
+        }
+
+        public static double[] getDoubleArrayFromHexColorText(string txt)
+        {
+            Color col = ColorTranslator.FromHtml(txt);
+            double convert = 1.0/255;
+            double[] arrColor = new double[] {convert*col.R, convert*col.G, convert*col.B};
+            return arrColor;
         }
     }
 }

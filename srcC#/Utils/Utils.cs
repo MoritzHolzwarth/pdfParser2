@@ -3,8 +3,8 @@ using System.Net;
 
 namespace pdfParserByMH
 {
-    public enum PageXPosition {Left, Middle, Right}
-    public enum PageQuantifiers {None, All, NoneExceptArray, AllExceptArray}
+    public enum PageXPosition {Left, Middle, Right, Null}
+    public enum PageQuantifiers {NoneExceptArray, AllExceptArray, Null}
     public partial class Utils
     {
         public Utils()

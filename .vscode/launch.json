@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Custom Debug",
+            "type": "clr",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/Debug/net472/pdfParser2.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "stopAtEntry": false
+        }
+    ]
+}
