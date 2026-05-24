@@ -17,84 +17,76 @@ namespace pdfParserByMH
 
     public class DocData
     {
-        public Dictionary<Type,DocProperty> dictDocProperties {get; set;}
+        public Dictionary<DocPropertyType,object> dictDocProperties {get; set;}
         public string folderName
         {
-            get {return ((DocFolderName)dictDocProperties[typeof(DocFolderName)]).value;}
-            set {((DocFolderName)dictDocProperties[typeof(DocFolderName)]).value = value;}
+            get {return (string)dictDocProperties[DocPropertyType.FolderName];}
+            set {dictDocProperties[DocPropertyType.FolderName] = value;}
         }
         public string fileApproxName
         {
-            get {return ((DocApproxFilename)dictDocProperties[typeof(DocApproxFilename)]).value;}
-            set {((DocApproxFilename)dictDocProperties[typeof(DocApproxFilename)]).value = value;}
+            get {return (string)dictDocProperties[DocPropertyType.ApproxFileName];}
+            set {dictDocProperties[DocPropertyType.ApproxFileName] = value;}
         }
         public string header
         {
-            get {return ((DocHeader)dictDocProperties[typeof(DocHeader)]).value;}
-            set {((DocHeader)dictDocProperties[typeof(DocHeader)]).value = value;}
+            get {return (string)dictDocProperties[DocPropertyType.Header];}
+            set {dictDocProperties[DocPropertyType.Header] = value;}
         }
         public string footer
         {
-            get {return ((DocFooter)dictDocProperties[typeof(DocFooter)]).value;}
-            set {((DocFooter)dictDocProperties[typeof(DocFooter)]).value = value;}
+            get {return (string)dictDocProperties[DocPropertyType.Footer];}
+            set {dictDocProperties[DocPropertyType.Footer] = value;}
         }
         public PageXPosition headerXPos
         {
-            get {return ((DocHeaderXPos)dictDocProperties[typeof(DocHeaderXPos)]).value;}
-            set {((DocHeaderXPos)dictDocProperties[typeof(DocHeaderXPos)]).value = value;}
+            get {return (PageXPosition)dictDocProperties[DocPropertyType.HeaderXPos];}
+            set {dictDocProperties[DocPropertyType.HeaderXPos] = value;}
         }
         public PageXPosition footerXPos
         {
-            get {return ((DocFooterXPos)dictDocProperties[typeof(DocFooterXPos)]).value;}
-            set {((DocFooterXPos)dictDocProperties[typeof(DocFooterXPos)]).value = value;}
+            get {return (PageXPosition)dictDocProperties[DocPropertyType.FooterXPos];}
+            set {dictDocProperties[DocPropertyType.FooterXPos] = value;}
         }
         public PageQuantifiers vertPagesQuantifier
         {
-            get {return ((DocVertPageQuantifier)dictDocProperties[typeof(DocVertPageQuantifier)]).value;}
-            set {((DocVertPageQuantifier)dictDocProperties[typeof(DocVertPageQuantifier)]).value = value;}
+            get {return (PageQuantifiers)dictDocProperties[DocPropertyType.VertPageQuant];}
+            set {dictDocProperties[DocPropertyType.VertPageQuant] = value;}
         }
         public PageQuantifiers horiPagesQuantifier
         {
-            get {return ((DocHoriPageQuantifier)dictDocProperties[typeof(DocHoriPageQuantifier)]).value;}
-            set {((DocHoriPageQuantifier)dictDocProperties[typeof(DocHoriPageQuantifier)]).value = value;}
+            get {return (PageQuantifiers)dictDocProperties[DocPropertyType.HoriPageQuant];}
+            set {dictDocProperties[DocPropertyType.HoriPageQuant] = value;}
         }
         public int[] vertPagesNumbers
         {
-            get {return ((DocVertPageNumbers)dictDocProperties[typeof(DocVertPageNumbers)]).value;}
-            set {((DocVertPageNumbers)dictDocProperties[typeof(DocVertPageNumbers)]).value = value;}
+            get {return (int[])dictDocProperties[DocPropertyType.VertPageNumbers];}
+            set {dictDocProperties[DocPropertyType.VertPageNumbers] = value;}
         }
         public int[] horiPagesNumbers
         {
-            get {return ((DocHoriPageNumbers)dictDocProperties[typeof(DocHoriPageNumbers)]).value;}
-            set {((DocHoriPageNumbers)dictDocProperties[typeof(DocHoriPageNumbers)]).value = value;}
+            get {return (int[])dictDocProperties[DocPropertyType.HoriPageNumbers];}
+            set {dictDocProperties[DocPropertyType.HoriPageNumbers] = value;}
         }
         public double scaleFactor
         {
-            get {return ((DocScaleFactor)dictDocProperties[typeof(DocScaleFactor)]).value;}
-            set {((DocScaleFactor)dictDocProperties[typeof(DocScaleFactor)]).value = value;}
+            get {return (double)dictDocProperties[DocPropertyType.ScaleFactor];}
+            set {dictDocProperties[DocPropertyType.ScaleFactor] = value;}
         }
         public double[] textColor
         {
-            get {return ((DocTextColor)dictDocProperties[typeof(DocTextColor)]).value;}
-            set {((DocTextColor)dictDocProperties[typeof(DocTextColor)]).value = value;}
+            get {return (double[])dictDocProperties[DocPropertyType.TextColor];}
+            set {dictDocProperties[DocPropertyType.TextColor] = value;}
         }
         public System.Windows.Forms.CheckBox box {get; set;}
+        public bool hasChanged {get; set;}
         public DocData(string folder = "", string file = "")
         {
-            dictDocProperties = new Dictionary<Type, DocProperty>();
-            dictDocProperties.Add(typeof(DocFolderName), new DocFolderName(folder));
-            dictDocProperties.Add(typeof(DocApproxFilename), new DocApproxFilename(file));
-            dictDocProperties.Add(typeof(DocHeader), new DocHeader());
-            dictDocProperties.Add(typeof(DocFooter), new DocFooter());
-            dictDocProperties.Add(typeof(DocHeaderXPos), new DocHeaderXPos());
-            dictDocProperties.Add(typeof(DocFooterXPos), new DocFooterXPos());
-            dictDocProperties.Add(typeof(DocVertPageQuantifier), new DocVertPageQuantifier());
-            dictDocProperties.Add(typeof(DocHoriPageQuantifier), new DocHoriPageQuantifier());
-            dictDocProperties.Add(typeof(DocVertPageNumbers), new DocVertPageNumbers());
-            dictDocProperties.Add(typeof(DocHoriPageNumbers), new DocHoriPageNumbers());
-            dictDocProperties.Add(typeof(DocScaleFactor), new DocScaleFactor());
-            dictDocProperties.Add(typeof(DocTextColor), new DocTextColor());
+            dictDocProperties = new Dictionary<DocPropertyType, object>();
+            folderName = folder;
+            fileApproxName = file;
             box = new CheckBox();
+            hasChanged = false;
         }
     }
     public partial class FrontEndProgram
@@ -106,12 +98,10 @@ namespace pdfParserByMH
             AllDokuForm.Font = new System.Drawing.Font("Helvetica", 12);
             AllDokuForm.BackColor = System.Drawing.ColorTranslator.FromHtml("#E1F3F5");
 
-            AllDokuForm_initCheckboxes();
+            AllDokuForm_fillDictDocs();
             HashSet<string> setFolderNames = new HashSet<string>();
-            foreach(DocData pb in dictDocs.Values)
-            {
-                setFolderNames.Add(((DocFolderName)pb.dictDocProperties[typeof(DocFolderName)]).value);
-            }
+            foreach(DocData docdata in dictDocs.Values)
+                setFolderNames.Add(docdata.folderName);
 
             int y = 10;
             y = AllDokuForm_makeDokuFolderPathControl(y);
@@ -287,63 +277,54 @@ namespace pdfParserByMH
 
 
 
-        private void AllDokuForm_initCheckboxes()
+        private void AllDokuForm_fillDictDocs()
         {
-            dictDocs = new System.Collections.Generic.Dictionary<string, DocData>();
+            dictDocs = new Dictionary<string, DocData>();
             fillDictDocsFromDefault();
-            if(System.IO.File.Exists(savedContentsPath))
-                fillDictDocsFromSavedContents();
+            fillDictDocsFromSavedContents();
         }
 
         private void fillDictDocsFromSavedContents()
         {
-            foreach(string docName in dictDocs.Keys)
+            if(!Directory.Exists(savedContentsFolderPath))
+                return;
+            foreach(string docname in dictDocs.Keys)
             {
-                Dictionary<Type, DocProperty> dictProperties = dictDocs[docName].dictDocProperties;
-                foreach(Type propType in dictProperties.Keys)
+                string filepath = Path.Combine(savedContentsFolderPath, docname + ".txt");
+                if(!File.Exists(filepath))
+                    continue;
+                Dictionary<string,string> dictFromSavedProps = jsSerializer.Deserialize<Dictionary<string,string>>(File.ReadAllText(filepath));
+                Dictionary<DocPropertyType,object> dictProps = dictDocs[docname].dictDocProperties;
+                foreach(string txtkey in dictFromSavedProps.Keys)
                 {
-                    string propName = docName + "_" + propType.ToString();
-                    if(dictSavedContents.ContainsKey(propName))
-                    {
-                        string propText = dictSavedContents[propName];
-                        dictProperties[propType] = getDocPropertyFromText(propType, propText);
-                    }       
+                    string txtval = dictFromSavedProps[txtkey];
+                    DocPropertyType proptype;
+                    if(!Enum.TryParse(txtkey, out proptype))
+                        throw new Exception(string.Format("Error in fillDictDocsFromSavedContents(): unknown Key in saved Contents of {0}!:\n{1}", docname, txtkey));
+                    dictProps[proptype] = getDocPropertyValueFromSavedText(proptype, txtval);
                 }
             }
         }
 
-        private DocProperty getDocPropertyFromText(Type type, string txt)
+        public object getDocPropertyValueFromSavedText(DocPropertyType proptype, string propText)
         {
-            object prop;
-            if(type.IsSubclassOf(typeof(DocStringProperty)))
-            {
-                prop = Activator.CreateInstance(type, txt);
-            }
-            else if(type == typeof(DocHeaderXPos) || type == typeof(DocFooterXPos))
-            {
-                prop = Activator.CreateInstance(type, getPageXPositionFromText(txt));
-            }
-            else if(type == typeof(DocVertPageQuantifier) || type == typeof(DocHoriPageQuantifier))
-            {
-                prop = Activator.CreateInstance(type, getPageQuantifierFromText(txt));
-            }
-            else if(type == typeof(DocVertPageNumbers) || type == typeof(DocHoriPageNumbers))
-            {
-                prop = Activator.CreateInstance(type, getIntArrayFromText(txt));
-            }
-            else if(type == typeof(DocScaleFactor))
-            {
-                prop = Activator.CreateInstance(type, getDoubleFromText(txt));
-            }
-            else if(type == typeof(DocTextColor))
-            {
-                prop = Activator.CreateInstance(type, getDoubleArrayFromRGBColorText(txt));
-            }
-            else
-                throw new System.Exception(string.Format("Error in getDocPropertyFromText(): Unknown Type {0}!", type.ToString()));
+            if(DocStringProperty.allSubTypes.Contains(proptype))
+                return propText;
+            if(DocPageXPosProperty.allSubTypes.Contains(proptype))
+                return getPageXPositionFromText(propText);
+            if(DocPageQuantifierProperty.allSubTypes.Contains(proptype))
+                return getPageQuantifierFromText(propText);
+            if(DocIntArrayProperty.allSubTypes.Contains(proptype))
+                return getIntArrayFromText(propText);
+            if(proptype == DocPropertyType.ScaleFactor)
+                return getDoubleFromText(propText);
+            if(proptype == DocPropertyType.TextColor)
+                return getDoubleArrayFromRGB1ColorText(propText);
             
-            return (DocProperty)prop;
+            throw new Exception("Error in getDocPropertyValueFromSavedText(): invalid DocPropertyType! " + proptype.ToString());
         }
+
+
 
         private void fillDictDocsFromDefault()
         {   
@@ -430,7 +411,7 @@ namespace pdfParserByMH
                 case "AllExceptArray":
                     return PageQuantifiers.AllExceptArray;
                 default:
-                    throw new System.Exception(string.Format("Error: Unknown PageQuantifier Text: {0}", txt));
+                    throw new Exception(string.Format("Error: Unknown PageQuantifier Text: {0}", txt));
             }
         }
 
@@ -445,7 +426,7 @@ namespace pdfParserByMH
             return arrInts;
         }
 
-        private double[] getDoubleArrayFromRGBColorText(string txt)
+        private double[] getDoubleArrayFromRGB1ColorText(string txt)
         {
             string[] arrTxt = txt.Split(separator: new char[] {','}, options: StringSplitOptions.RemoveEmptyEntries);
             double[] arrDoubles = new double[arrTxt.Length];

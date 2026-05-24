@@ -13,4 +13,8 @@
     <EmbeddedResource Include = "fontData\*.json" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include = "System.Web.Extensions" />
+  </ItemGroup>
+
 </Project>
