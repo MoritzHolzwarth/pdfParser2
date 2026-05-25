@@ -44,6 +44,7 @@ namespace pdfParserByMH
                 anytingHasChanged = true;
                 foreach(DocData docdata in selectedDocDatas)
                     docdata.hasChanged = true;
+                resetAllDokuForm();
             }
         }
     }

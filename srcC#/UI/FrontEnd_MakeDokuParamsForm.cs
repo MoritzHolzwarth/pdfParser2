@@ -15,7 +15,7 @@ namespace pdfParserByMH
 
             DokuParamsForm = new Form();
             DokuParamsForm.StartPosition = FormStartPosition.CenterScreen;
-            form.AutoScaleMode = AutoScaleMode.Font;
+            DokuParamsForm.AutoScaleMode = AutoScaleMode.Font;
             DokuParamsForm.Size = new Size(800, 950);
             DokuParamsForm.Font = new Font("Helvetica", 12);
             DokuParamsForm.BackColor = ColorTranslator.FromHtml("#E1F3F5");
@@ -310,7 +310,7 @@ namespace pdfParserByMH
             Label colorName = new Label();
             colorName.Location = new Point(x, y);
             colorName.AutoSize = true;
-            colorName.Text = DocProperty.unv;
+            colorName.Text = DocProperty.unv; //This Label is not just a Label. Its Text stores the Textcolor. Its text is initially set to '/unverändert'.
             DokuParamsForm.Controls.Add(colorName);
             dictDocProperties[DocPropertyType.TextColor] = new DocTextColor(colorName);
 
@@ -360,15 +360,14 @@ namespace pdfParserByMH
         private int DokuParamsForm_makeOKButtonControl(int y)
         {
             int x = 350;
-            System.Windows.Forms.Button okButton = new System.Windows.Forms.Button();
+            System.Windows.Forms.Button okButton = new Button();
             okButton.Location = new System.Drawing.Point(x, y);
             okButton.Size = new System.Drawing.Size(100,50);
             okButton.Text = "OK";
             okButton.BackColor = System.Drawing.ColorTranslator.FromHtml("#C2EAF0");
             okButton.Click += (sender, e) =>
             {
-                stempelOption = StempelOptions.Null;
-                DokuParamsForm.DialogResult = System.Windows.Forms.DialogResult.OK;
+                DokuParamsForm.DialogResult = DialogResult.OK;
                 DokuParamsForm.Close();
             };
             DokuParamsForm.Controls.Add(okButton);

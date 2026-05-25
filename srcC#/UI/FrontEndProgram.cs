@@ -20,17 +20,19 @@ using Microsoft.Win32;
 
 namespace pdfParserByMH
 {
-    enum StempelOptions {DoAllDoku, DoSingelPDF, AdjustDokuParams, Null}
+    enum ProgramState {DoAllDoku, DoSingelPDF, AdjustDokuParams, Null}
     public partial class FrontEndProgram
     {
         Form form;
-        StempelOptions stempelOption = StempelOptions.Null;
+        TabControl tabControl;
+        ProgramState progState = ProgramState.Null;
         System.Windows.Forms.TabPage AllDokuForm;
         System.Windows.Forms.TabPage SinglePDFForm;
         Form DokuParamsForm;
         bool anytingHasChanged;
         pdfDocument doc;
         string dokuFolderPath;
+        string uploadFolderApproxName = "1_Upload NWL_Rev.*";
         string uploadFolderPath;
         string dokuID;
         string dokuRev;
@@ -46,18 +48,18 @@ namespace pdfParserByMH
             savedContentsFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), 
                                             "pdfParser2ByMH" );
             jsSerializer = new System.Web.Script.Serialization.JavaScriptSerializer();
+
             doc = new pdfDocument();
             form = new Form();
             form.StartPosition = FormStartPosition.CenterScreen;
             form.AutoScaleMode = AutoScaleMode.Font;
             form.Size = new Size(800,950);
-            makeSingelPDFForm();
-            makeAllDokuForm();
-            makeDokuParamsForm();
-            TabControl tabControl = new TabControl();
+            tabControl = new TabControl();
             tabControl.Size = new Size(800,900);
+            makeSingelPDFForm();
+            makeDokuParamsForm();
+            makeAllDokuForm();
             tabControl.Controls.Add(SinglePDFForm);
-            tabControl.Controls.Add(AllDokuForm);
             form.Controls.Add(tabControl);
             form.AutoScroll = true;
         }
@@ -94,25 +96,24 @@ namespace pdfParserByMH
 
         public void run()
         {
-            System.Windows.Forms.DialogResult result = form.ShowDialog();
-            while(result == System.Windows.Forms.DialogResult.OK)
+            DialogResult result = form.ShowDialog();
+            while(result == DialogResult.OK)
             {
-                switch (stempelOption)
+                switch (progState)
                 {
-                    case StempelOptions.Null:
-                        throw new System.Exception("Error in run(): No valid StempelOption! Must be DoAllDoku or DoSinglePDF");
-                    case StempelOptions.DoAllDoku:
+                    case ProgramState.DoAllDoku:
                         allDokuStempeln();
                         break;
-                    case StempelOptions.DoSingelPDF:
+                    case ProgramState.DoSingelPDF:
                         singlePDFStempeln();
                         break;
-                    case StempelOptions.AdjustDokuParams:
+                    case ProgramState.AdjustDokuParams:
                         adjustDokuParams();
                         break;
                     default:
-                        break;
+                        throw new Exception(string.Format("Error in FrontEndProgram.run(): Invalid Program State '{0}'!", progState.ToString()));
                 }
+                progState = ProgramState.Null; //reset Program State after execution, to be set again by next Form Dialog.
                 result = form.ShowDialog();
             }
             saveFormContents();

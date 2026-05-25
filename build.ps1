@@ -24,6 +24,7 @@ $outPath = Join-Path "$PSScriptRoot\bin\Debug\net472" "pdfParser2.exe"
 
 $cscargs = @("/target:exe", "/platform:anycpu", "/optimize+", "/langversion:5", "/out:`"$outPath`"") +
         ($fontFiles | ForEach-Object {"/resource:`"$_`",Font.$($_.Substring($fontDir.Length+1))"}) +
+        ("/resource:System.Web.Extensions.dll") + #This is needed for the JavascriptSerialozer used to easily read/write to .json filed
         ($sourceFiles | ForEach-Object {"`"$_`""})
 
 Write-Host "Compiler. $csc"
