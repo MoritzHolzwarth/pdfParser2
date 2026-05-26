@@ -178,7 +178,7 @@ namespace pdfParserByMH
             {
                 for(int i=1; i<arrText.Length; i++)
                 {
-                    strBuild.Append(string.Format("\n{0} -{1} Td", rel_xpos[i], lineHeight));
+                    strBuild.Append(string.Format("\n{0} {1} Td", rel_xpos[i], lineHeight));
                     strBuild.Append(string.Format("\n{0} Tj", arrText[i]));
                 }
             }

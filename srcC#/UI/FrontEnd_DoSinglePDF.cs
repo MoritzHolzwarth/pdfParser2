@@ -44,9 +44,7 @@ namespace pdfParserByMH
                 throw new System.Exception(string.Format("Error in singlePDFStempeln(): Negative Scale Factor Value: {0}", tb_scaleFactor.Text));
 
             string colorHex = ((Label)SinglePDFForm.Controls["ColorName"]).Text;
-            Color col = ColorTranslator.FromHtml(colorHex);
-            double convert = 1.0/255;
-            double[] arrColor = new double[] {convert*col.R, convert*col.G, convert*col.B};
+            double[] arrColor = getDoubleArrayFromHexColorText(colorHex);
             
             try
             {
@@ -171,6 +169,14 @@ namespace pdfParserByMH
                 }
             }
             return PageXPosition.Null;
+        }
+
+        public static double[] getDoubleArrayFromHexColorText(string txt)
+        {
+            Color col = ColorTranslator.FromHtml(txt);
+            double convert = 1.0/255;
+            double[] arrColor = new double[] {convert*col.R, convert*col.G, convert*col.B};
+            return arrColor;
         }
     }
 }

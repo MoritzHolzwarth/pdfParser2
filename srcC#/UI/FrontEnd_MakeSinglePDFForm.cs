@@ -16,6 +16,11 @@ namespace pdfParserByMH
             SinglePDFForm.Font = new System.Drawing.Font("Helvetica", 12);
             SinglePDFForm.BackColor = System.Drawing.ColorTranslator.FromHtml("#E1F3F5");
 
+            SinglePDFForm_makeFields();
+        }
+
+        private void SinglePDFForm_makeFields()
+        {
             int y = 10;
             y = SinglePDFForm_makeFilePathControl(y);
             y = SinglePDFForm_makeHeaderTextBoxControl(y + 10);

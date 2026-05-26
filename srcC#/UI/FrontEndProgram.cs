@@ -29,9 +29,9 @@ namespace pdfParserByMH
         System.Windows.Forms.TabPage AllDokuForm;
         System.Windows.Forms.TabPage SinglePDFForm;
         Form DokuParamsForm;
-        bool anytingHasChanged;
+        bool anytingHasChanged = false;
         pdfDocument doc;
-        string dokuFolderPath;
+        string dokuFolderPath = "";
         string uploadFolderApproxName = "1_Upload NWL_Rev.*";
         string uploadFolderPath;
         string dokuID;
@@ -40,58 +40,37 @@ namespace pdfParserByMH
         string savedContentsFolderPath;
         System.Web.Script.Serialization.JavaScriptSerializer jsSerializer;
         Dictionary<string, DocData> dictDocs;
+        Dictionary<string, CheckBox> dictDocCheckboxes;
+        bool overrideDokuFiles = false;
 
         Dictionary<DocPropertyType,DocProperty> dictDocProperties;
         public FrontEndProgram()
         {
-            anytingHasChanged = false;
             savedContentsFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), 
                                             "pdfParser2ByMH" );
             jsSerializer = new System.Web.Script.Serialization.JavaScriptSerializer();
-
             doc = new pdfDocument();
+
             form = new Form();
             form.StartPosition = FormStartPosition.CenterScreen;
             form.AutoScaleMode = AutoScaleMode.Font;
             form.Size = new Size(800,950);
+            form.AutoScroll = true;
+
             tabControl = new TabControl();
             tabControl.Size = new Size(800,900);
-            makeSingelPDFForm();
-            makeDokuParamsForm();
-            makeAllDokuForm();
-            tabControl.Controls.Add(SinglePDFForm);
             form.Controls.Add(tabControl);
-            form.AutoScroll = true;
-        }
+            
+            makeDictDocs();
+            loadData();
 
-        private void saveFormContents()
-        {
-            if(!anytingHasChanged)
-                return;
-            bool newDirectory = false;
-            if(!Directory.Exists(savedContentsFolderPath))
-            {
-                Directory.CreateDirectory(savedContentsFolderPath);
-                newDirectory = true;
-            }
-            foreach(string docname in dictDocs.Keys)
-            {
-                DocData docdata = dictDocs[docname];
-                if(!newDirectory && !docdata.hasChanged)
-                    continue;
-                string filepath = Path.Combine(savedContentsFolderPath, docname + ".json");
-                Dictionary<DocPropertyType, object> dictProps = docdata.dictDocProperties;
-                Dictionary<string,string> dictToSaveProps = new Dictionary<string, string>(dictProps.Count);
-                foreach(DocPropertyType proptype in dictProps.Keys)
-                {
-                    object value = dictProps[proptype];
-                    string savekey = proptype.ToString();
-                    string savevalue = getSaveTextFromDocPropertyValue(proptype, value);
-                    dictToSaveProps.Add(savekey, savevalue);
-                }
-                string serialized = jsSerializer.Serialize(dictToSaveProps);
-                File.WriteAllText(filepath, serialized);
-            }
+            makeAllDokuForm();
+            tabControl.Controls.Add(AllDokuForm);
+
+            makeSingelPDFForm();
+            tabControl.Controls.Add(SinglePDFForm);
+
+            makeDokuParamsForm();        
         }
 
         public void run()
@@ -116,47 +95,8 @@ namespace pdfParserByMH
                 progState = ProgramState.Null; //reset Program State after execution, to be set again by next Form Dialog.
                 result = form.ShowDialog();
             }
-            saveFormContents();
+            saveData();
         }
-
-        private string getSaveTextFromDocPropertyValue(DocPropertyType proptype, object val)
-        {
-            if(DocStringProperty.allSubTypes.Contains(proptype))
-                return (string)val;
-            if(DocPageXPosProperty.allSubTypes.Contains(proptype))
-                return ((PageXPosition)val).ToString();
-            if(DocPageQuantifierProperty.allSubTypes.Contains(proptype))
-                return ((PageQuantifiers)val).ToString();
-            if(DocIntArrayProperty.allSubTypes.Contains(proptype))
-                return string.Join(",",(int[])val);
-            if(proptype == DocPropertyType.ScaleFactor)
-                return ((double)val).ToString();
-            if(proptype == DocPropertyType.TextColor)
-                return string.Join(",",(double[])val);
-            
-            throw new Exception("Error in getSaveTextFromDocPropertyValue(): invalid DocPropertyType! " + proptype.ToString());
-        }
-
-        
-
-        private string insertPlaceHolders(string txt)
-        {
-            string newTxt;
-            if(dokuID != null)
-                newTxt = Regex.Replace(txt,"/Doku_ID", dokuID);
-            else
-                newTxt = Regex.Replace(txt,"/Doku_ID", "?");
-            if(dokuRev != null)
-                newTxt = Regex.Replace(newTxt, "/Doku_Rev", dokuRev);
-            else
-                newTxt = Regex.Replace(newTxt, "/Doku_Rev", "?");
-            if(ADBRev != null)
-                newTxt = Regex.Replace(newTxt, "/ADB_Rev", ADBRev);
-            else
-                newTxt = Regex.Replace(newTxt, "/ADB_Rev", "?");
-            return newTxt;
-        }
-
 
     }
 }

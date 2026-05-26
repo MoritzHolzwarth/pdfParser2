@@ -21,17 +21,22 @@ namespace pdfParserByMH
             DokuParamsForm.BackColor = ColorTranslator.FromHtml("#E1F3F5");
             DokuParamsForm.AutoScroll = true;
 
+            DokuParamsForm_makeFields();
+        }
+
+        private void DokuParamsForm_makeFields()
+        {
             int y = 10;
-            y = DokuParamsForm_makeFilePathControl(y, docdata);
-            y = DokuParamsForm_makeHeaderTextBoxControl(y + 10, docdata);
-            y = DokuParamsForm_makeFooterTextBoxControl(y + 10, docdata);
-            y = DokuParamsForm_makeVerticalPagesControl(y + 10, docdata);
-            y = DokuParamsForm_makeHorizontalPagesControl(y + 10, docdata);
-            y = DokuParamsForm_makePageScalingAndTextColorControl(y + 10, docdata);
+            y = DokuParamsForm_makeFilePathControl(y);
+            y = DokuParamsForm_makeHeaderTextBoxControl(y + 10);
+            y = DokuParamsForm_makeFooterTextBoxControl(y + 10);
+            y = DokuParamsForm_makeVerticalPagesControl(y + 10);
+            y = DokuParamsForm_makeHorizontalPagesControl(y + 10);
+            y = DokuParamsForm_makePageScalingAndTextColorControl(y + 10);
             y = DokuParamsForm_makeOKButtonControl(y + 10);
         }
 
-        private void fillDokuParamsForm(DocData docdata = null)
+        private void DokuParamsForm_fillFields(DocData docdata = null)
         {
             if(docdata != null)
             {
@@ -46,6 +51,12 @@ namespace pdfParserByMH
                 foreach(DocProperty docprop in dictDocProperties.Values)
                     docprop.clear();
             }
+        }
+
+        private void DokuParamsForm_readFields()
+        {
+            foreach(DocProperty docprop in dictDocProperties.Values)
+                docprop.read();
         }
 
         private int DokuParamsForm_makeFilePathControl(int y, DocData docdata = null)

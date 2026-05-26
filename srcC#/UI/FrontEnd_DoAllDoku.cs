@@ -1,6 +1,7 @@
 using System;
 using System.Windows.Forms;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace pdfParserByMH
 {
@@ -12,15 +13,14 @@ namespace pdfParserByMH
                 return;
 
             System.Collections.Generic.List<string> lstMissedFiles = new System.Collections.Generic.List<string>();
-            bool overrideFiles = ((CheckBox)AllDokuForm.Controls["Override_Files"]).Checked;
             foreach(string docName in dictDocs.Keys)
             {
-                bool isChecked = dictDocs[docName].box.Checked;
-                if(!isChecked)
+                DocData docdata = dictDocs[docName];
+                if(docdata.doStempeln)
                     continue;
                 Console.WriteLine(string.Format("Now Stempeln: {0}", docName));
-                string subFolderName = dictDocs[docName].folderName;
-                string fileNameWildcard = dictDocs[docName].fileApproxName;
+                string subFolderName = docdata.folderName;
+                string fileNameWildcard = docdata.fileApproxName;
                 string[] filePaths = Directory.GetFiles(Path.Combine(uploadFolderPath, subFolderName) , fileNameWildcard, SearchOption.TopDirectoryOnly);
                 if(filePaths.Length == 0)
                 {
@@ -42,7 +42,7 @@ namespace pdfParserByMH
                 foreach(string filePath in filePaths)
                 {
                     string outPath;
-                    if(overrideFiles)
+                    if(overrideDokuFiles)
                     {
                        outPath = filePath;
                     }
@@ -52,7 +52,7 @@ namespace pdfParserByMH
                             Directory.CreateDirectory(dirGestempelt);
                         outPath = Path.Combine(dirGestempelt, Path.GetFileName(filePath));
                     }
-                    if(!stempelDokuDoc(docName, filePath, outPath))
+                    if(!stempelDokuDoc(docdata, filePath, outPath))
                         lstMissedFiles.Add(docName);
                 }
             }
@@ -74,7 +74,6 @@ namespace pdfParserByMH
 
         private bool prepare_AllDokuStempeln()
         {
-            dokuFolderPath = AllDokuForm.Controls["AllDoku_FolderPath"].Text;
             if(!Directory.Exists(dokuFolderPath))
             {
                 MessageBox.Show(string.Format("Der angegebene Dokuordner konnte nicht gefunden werden!\n" +
@@ -105,7 +104,7 @@ namespace pdfParserByMH
                 return false;
             if(!getDokuRev())
                 return false;
-            if(dictDocs["Abfalldatenblatt"].box.Checked)
+            if(dictDocs["Abfalldatenblatt"].doStempeln)
             {
                 if(!getADBRev())
                     return false;
@@ -203,9 +202,8 @@ namespace pdfParserByMH
             return true;
         }
 
-        private bool stempelDokuDoc(string docName, string filePath, string outPath)
+        private bool stempelDokuDoc(DocData docData, string filePath, string outPath)
         {
-            DocData docData = dictDocs[docName];
             string header = insertPlaceHolders(docData.header);
             string footer = insertPlaceHolders(docData.footer);
             try
@@ -223,6 +221,24 @@ namespace pdfParserByMH
                 return false;
             }
             return true;
+        }
+
+        private string insertPlaceHolders(string txt)
+        {
+            string newTxt;
+            if(dokuID != null)
+                newTxt = Regex.Replace(txt,"/Doku_ID", dokuID);
+            else
+                newTxt = Regex.Replace(txt,"/Doku_ID", "?");
+            if(dokuRev != null)
+                newTxt = Regex.Replace(newTxt, "/Doku_Rev", dokuRev);
+            else
+                newTxt = Regex.Replace(newTxt, "/Doku_Rev", "?");
+            if(ADBRev != null)
+                newTxt = Regex.Replace(newTxt, "/ADB_Rev", ADBRev);
+            else
+                newTxt = Regex.Replace(newTxt, "/ADB_Rev", "?");
+            return newTxt;
         }
     }
 }

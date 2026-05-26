@@ -16,12 +16,13 @@ namespace pdfParserByMH
         public static string unv = "/unverändert";
         public virtual DocPropertyType type {get {return DocPropertyType.Null;}}
         public object value {get; set;}
+        public bool hasChanged {get; set;}
         public DocProperty()
-        {}
-        public virtual bool read()
         {
-            return false;
+            hasChanged = false;
         }
+        public virtual void read()
+        {}
         public virtual bool write()
         {
             return false;
@@ -40,12 +41,15 @@ namespace pdfParserByMH
         {
             textbox = tb;
         }
-        public override bool read()
+        public override void read()
         {
             if(textbox.Text == unv)
-                return false;
-            value = textbox.Text;
-            return true;
+                hasChanged = false;
+            else
+            {
+                value = textbox.Text;
+                hasChanged = true;
+            }
         }
         public override bool write()
         {
@@ -72,7 +76,7 @@ namespace pdfParserByMH
                 throw new System.Exception("Error in DocPageXPosProperty(): Parameter 'arr' must have Length 3, since there are 3 defined XPos values!");
             arrRBs = arr;
         }
-        public override bool read()
+        public override void read()
         {
             for(int i=0; i<3; i++)
             {
@@ -81,10 +85,11 @@ namespace pdfParserByMH
                     if(arrRBs[(i+1)%3].Checked || arrRBs[(i+2)%3].Checked)
                         throw new System.Exception("Error in DocPageXPosProperty.read(): More than 1 RadioButton checked!");
                     value = arrValues[i];
-                    return true;
+                    hasChanged = true;
+                    return;
                 }
             }
-            return false; //if no RBs are checked
+            hasChanged = false; //if no RBs are checked
         }
         public override bool write()
         {
@@ -119,21 +124,22 @@ namespace pdfParserByMH
                 throw new System.Exception("Error in DocPageQuantifierProperty(): Parameter 'arr' must have Length 2, since there are 2 defined PageQuantifier values!");
             arrRBs = arr;
         }
-        public override bool read()
+        public override void read()
         {
             if(arrRBs[0].Checked && arrRBs[1].Checked)
                 throw new System.Exception("Error in DocPageQuantifierProperty(): More than 1 RadioButton checked!");
             else if(arrRBs[0].Checked)
             {
                 value = PageQuantifiers.NoneExceptArray;
-                return true;
+                hasChanged = true;
             }
             else if(arrRBs[1].Checked)
             {
                 value = PageQuantifiers.AllExceptArray;
-                return true;
+                hasChanged = true;
             }
-            return false; //if no RBs are checked
+            else
+                hasChanged = false; //if no RBs are checked
         }
         public override bool write()
         {
@@ -167,11 +173,14 @@ namespace pdfParserByMH
         {
             textbox = tb;
         }
-        public override bool read()
+        public override void read()
         {
             string txt = textbox.Text;
             if(txt == unv)
-                return false;
+            {
+                hasChanged = false;
+                return;
+            }
             txt = txt.Replace(" ", "");
             string[] arrTxt = txt.Split(new char[] {','}, System.StringSplitOptions.RemoveEmptyEntries);
             int[] numbers = new int[arrTxt.Length];
@@ -183,7 +192,7 @@ namespace pdfParserByMH
                 numbers[i] = num;
             }
             value = numbers;
-            return true;
+            hasChanged = true;
         }
         public override bool write()
         {
@@ -279,16 +288,19 @@ namespace pdfParserByMH
         {
             textbox = tb;
         }
-        public override bool read()
+        public override void read()
         {
             string txt = textbox.Text;
             if(txt == unv)
-                return false;
+            {
+                hasChanged = false;
+                return;
+            }
             double val;
             if(!double.TryParse(txt, out val))
                 throw new System.Exception("Error in DocScaleFactor.read(): non-numberic value :" + txt);
             value = val;
-            return true;
+            hasChanged = true;
         }
         public override bool write()
         {
@@ -311,15 +323,18 @@ namespace pdfParserByMH
         {
             label = lab;
         }
-        public override bool read()
+        public override void read()
         {
             string txt = label.Text;
             if(txt == unv)
-                return false;
+            {
+                hasChanged = false;
+                return;
+            }
             System.Drawing.Color col = System.Drawing.ColorTranslator.FromHtml(txt);
             double convert = 1.0/255;
             value = new double[] {convert*col.R, convert*col.G, convert*col.B};
-            return true;
+            hasChanged = true;
         }
         public override bool write()
         {
