@@ -166,7 +166,7 @@ namespace pdfParserByMH
 
         private string getTextBlockStreamCommand(string[] arrText, double xpos, double[] rel_xpos, double ypos, int fontSize, string fontToken, double[] fontColor, bool rotate)
         {
-            int lineHeight = System.Convert.ToInt32(fontSize*1.2);
+            int lineHeight = -Convert.ToInt32(fontSize*1.2);
             string cmCommand = rotate? string.Format("0 1 -1 0 {0} 0 cm", mediaBox[3]): "";
             string rgCommand = string.Format("{0} {1} {2} rg", fontColor[0], fontColor[1], fontColor[2]);
             string tfCommand = string.Format("{0} {1} Tf", fontToken, fontSize);
@@ -178,7 +178,7 @@ namespace pdfParserByMH
             {
                 for(int i=1; i<arrText.Length; i++)
                 {
-                    strBuild.Append(string.Format("\n+{0} -{1} Td", rel_xpos[i], lineHeight));
+                    strBuild.Append(string.Format("\n{0} -{1} Td", rel_xpos[i], lineHeight));
                     strBuild.Append(string.Format("\n{0} Tj", arrText[i]));
                 }
             }
