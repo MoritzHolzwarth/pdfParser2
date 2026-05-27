@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.CodeDom;
 using System.Diagnostics.Eventing.Reader;
 using System.Drawing;
@@ -324,8 +324,8 @@ namespace pdfParserByMH
 
         public ValueTuple<string[], double[]> formatStringForPDFStream(string str, string fontName, int fontSize)
         {
-            string str1 = System.Text.RegularExpressions.Regex.Replace(str, "/PagesCount", document.numPages.ToString());
-            string str2 = System.Text.RegularExpressions.Regex.Replace(str1, "/PageNum", number.ToString());
+            string str1 = System.Text.RegularExpressions.Regex.Replace(str, "{pagecount}", document.numPages.ToString());
+            string str2 = System.Text.RegularExpressions.Regex.Replace(str1, "{pagenum}", number.ToString());
             str2 = str2.Replace("\r", "");
             string[] arrStrings = str2.Split('\n');
             double[] arrTrueStringLengths = new double[arrStrings.Length];
