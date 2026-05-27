@@ -13,7 +13,7 @@ namespace pdfParserByMH
             DokuParamsForm.StartPosition = FormStartPosition.CenterScreen;
             DokuParamsForm.Font = new Font("Arial", 12);
             DokuParamsForm.AutoScaleMode = AutoScaleMode.Font;
-            DokuParamsForm.Size = new Size(800, 950);
+            DokuParamsForm.Size = formSize;
             DokuParamsForm.BackColor = ColorTranslator.FromHtml("#E1F3F5");
             DokuParamsForm.AutoScroll = true;
 

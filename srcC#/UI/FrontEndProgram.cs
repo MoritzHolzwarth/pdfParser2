@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Resources;
 using System.Windows.Forms;
 
 namespace pdfParserByMH
@@ -11,6 +12,7 @@ namespace pdfParserByMH
     public partial class FrontEndProgram
     {
         Form form;
+        Size formSize;
         TabControl tabControl;
         ProgramState progState = ProgramState.Null;
         TabPage AllDokuForm;
@@ -42,17 +44,21 @@ namespace pdfParserByMH
             jsSerializer = new System.Web.Script.Serialization.JavaScriptSerializer();
             doc = new pdfDocument();
 
+            int width = Math.Min(800, Screen.PrimaryScreen.WorkingArea.Width);
+            int height = Math.Min(1000, Screen.PrimaryScreen.WorkingArea.Height);
+            formSize = new Size(width, height);
+
             form = new Form();
             form.StartPosition = FormStartPosition.CenterScreen;
             form.Font = new Font("Arial", 12);
             form.Text = "PDF Stempeln";
             form.AutoScaleMode = AutoScaleMode.Font;
-            form.Size = new Size(800,950);
+            form.Size = formSize;
             form.AutoScroll = true;
 
             tabControl = new TabControl();
-            tabControl.Size = new Size(800,900);
             form.Controls.Add(tabControl);
+            tabControl.Size = formSize;
             
             makeDictDocs();
             loadData();

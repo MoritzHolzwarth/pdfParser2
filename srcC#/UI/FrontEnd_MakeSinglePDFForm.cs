@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Drawing;
 using System.Linq;
-using System.Numerics;
-using System.Security.Policy;
 using System.Windows.Forms;
 
 namespace pdfParserByMH
@@ -13,7 +11,6 @@ namespace pdfParserByMH
         {
             SinglePDFForm = new System.Windows.Forms.TabPage("Einzelnes PDF Stempeln");
             tabControl.Controls.Add(SinglePDFForm);
-            SinglePDFForm.Size = new System.Drawing.Size(800,950);
             SinglePDFForm.BackColor = System.Drawing.ColorTranslator.FromHtml("#E1F3F5");
 
             dictSinglePDFProperties = new System.Collections.Generic.Dictionary<DocPropertyType, DocProperty>();
