@@ -1,22 +1,10 @@
 ﻿//Written in C# 5
 using System;
-using System.CodeDom;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.IO;
-using System.Linq;
-using System.Runtime.ConstrainedExecution;
-using System.Runtime.ExceptionServices;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Security.Cryptography;
-using System.Text.RegularExpressions;
+using System.Resources;
 using System.Windows.Forms;
-using System.Windows.Forms.VisualStyles;
-using Microsoft.Win32;
 
 namespace pdfParserByMH
 {
@@ -24,12 +12,13 @@ namespace pdfParserByMH
     public partial class FrontEndProgram
     {
         Form form;
+        Form DokuParamsForm;
+        Panel DokuParamsPanel;
+        Size formSize;
         TabControl tabControl;
         ProgramState progState = ProgramState.Null;
-        System.Windows.Forms.TabPage AllDokuForm;
-        System.Windows.Forms.TabPage SinglePDFForm;
-        Form DokuParamsForm;
-        bool anytingHasChanged = false;
+        TabPage AllDokuForm;
+        TabPage SinglePDFForm;
         pdfDocument doc;
         string dokuFolderPath = "";
         string uploadFolderApproxName = "1_Upload NWL_Rev.*";
@@ -37,13 +26,18 @@ namespace pdfParserByMH
         string dokuID;
         string dokuRev;
         string ADBRev;
+        string dokuID_placeholder = "{dokuid}";
+        string DokuRev_placeholder = "{dokurev}";
+        string ADBRev_placeholder = "{adbrev}";
         string savedContentsFolderPath;
-        System.Web.Script.Serialization.JavaScriptSerializer jsSerializer;
         Dictionary<string, DocData> dictDocs;
         Dictionary<string, CheckBox> dictDocCheckboxes;
+        bool anytingHasChanged = false;
         bool overrideDokuFiles = false;
-
-        Dictionary<DocPropertyType,DocProperty> dictDocProperties;
+        bool overrideSinglePDF = false;
+        Dictionary<DocPropertyType,DocProperty> dictDocProperties;  //This is for Doku-Documents
+        Dictionary<DocPropertyType,DocProperty> dictSinglePDFProperties; //This is for the Single PDF editing
+        System.Web.Script.Serialization.JavaScriptSerializer jsSerializer;
         public FrontEndProgram()
         {
             savedContentsFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), 
@@ -51,26 +45,30 @@ namespace pdfParserByMH
             jsSerializer = new System.Web.Script.Serialization.JavaScriptSerializer();
             doc = new pdfDocument();
 
+            int width = Math.Min(800, Screen.PrimaryScreen.WorkingArea.Width);
+            int height = Math.Min(1000, Screen.PrimaryScreen.WorkingArea.Height);
+            formSize = new Size(width, height);
+
             form = new Form();
             form.StartPosition = FormStartPosition.CenterScreen;
+            form.Font = new Font("Arial", 12);
+            form.Text = "PDF Stempeln";
             form.AutoScaleMode = AutoScaleMode.Font;
-            form.Size = new Size(800,950);
+            form.Size = new Size(800,1000);
             form.AutoScroll = true;
 
             tabControl = new TabControl();
-            tabControl.Size = new Size(800,900);
             form.Controls.Add(tabControl);
+            tabControl.Size = formSize;
             
             makeDictDocs();
             loadData();
 
             makeAllDokuForm();
-            tabControl.Controls.Add(AllDokuForm);
 
-            makeSingelPDFForm();
-            tabControl.Controls.Add(SinglePDFForm);
+            makeSingelPDFForm();  
 
-            makeDokuParamsForm();        
+            makeDokuParamsForm();     
         }
 
         public void run()

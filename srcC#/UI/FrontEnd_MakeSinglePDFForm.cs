@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Drawing;
 using System.Linq;
-using System.Numerics;
-using System.Security.Policy;
 using System.Windows.Forms;
 
 namespace pdfParserByMH
@@ -12,15 +10,21 @@ namespace pdfParserByMH
         private void makeSingelPDFForm()
         {
             SinglePDFForm = new System.Windows.Forms.TabPage("Einzelnes PDF Stempeln");
-            SinglePDFForm.Size = new System.Drawing.Size(800,900);
-            SinglePDFForm.Font = new System.Drawing.Font("Helvetica", 12);
+            tabControl.Controls.Add(SinglePDFForm);
             SinglePDFForm.BackColor = System.Drawing.ColorTranslator.FromHtml("#E1F3F5");
 
+            dictSinglePDFProperties = new System.Collections.Generic.Dictionary<DocPropertyType, DocProperty>();
             SinglePDFForm_makeFields();
+            SingelPDFForm_fillFields();
         }
 
         private void SinglePDFForm_makeFields()
         {
+            dictSinglePDFProperties.Clear();
+            foreach(Control c in SinglePDFForm.Controls)
+                c.Dispose();
+            SinglePDFForm.Controls.Clear();
+
             int y = 10;
             y = SinglePDFForm_makeFilePathControl(y);
             y = SinglePDFForm_makeHeaderTextBoxControl(y + 10);
@@ -31,55 +35,76 @@ namespace pdfParserByMH
             y = SinglePDFForm_makeOKButtonControl(y + 10);
         }
 
+        private void SinglePDFForm_readFields()
+        {
+            overrideSinglePDF = ((CheckBox)SinglePDFForm.Controls["Override_File"]).Checked;
+            foreach(DocProperty docprop in dictSinglePDFProperties.Values)
+                docprop.read();
+        }
+
+        private void SingelPDFForm_fillFields()
+        {
+            dictSinglePDFProperties[DocPropertyType.HeaderXPos].value = PageXPosition.Left;
+            dictSinglePDFProperties[DocPropertyType.FooterXPos].value = PageXPosition.Left;
+            dictSinglePDFProperties[DocPropertyType.VertPageQuant].value = PageQuantifiers.NoneExceptArray;
+            dictSinglePDFProperties[DocPropertyType.HoriPageQuant].value = PageQuantifiers.NoneExceptArray;
+            dictSinglePDFProperties[DocPropertyType.VertPageNumbers].value = new int[] {};
+            dictSinglePDFProperties[DocPropertyType.HoriPageNumbers].value = new int[] {};
+            dictSinglePDFProperties[DocPropertyType.ScaleFactor].value = 1.0;
+            dictSinglePDFProperties[DocPropertyType.TextColor].value = new double[] {0,0,0};
+
+            foreach(DocProperty docprop in dictSinglePDFProperties.Values)
+                docprop.write();
+        }
+
         private int SinglePDFForm_makeFilePathControl(int y)
         {
             int x = 40;
-            System.Windows.Forms.Label textbox_FilePath_Label = new System.Windows.Forms.Label();
+            System.Windows.Forms.Label textbox_FilePath_Label = new Label();
+            SinglePDFForm.Controls.Add(textbox_FilePath_Label);
             textbox_FilePath_Label.Location = new System.Drawing.Point(x, y);
             textbox_FilePath_Label.Text = "Pfad der PDF-Datei";
             textbox_FilePath_Label.AutoSize = true;
-            SinglePDFForm.Controls.Add(textbox_FilePath_Label);
-            
             x += textbox_FilePath_Label.PreferredWidth + 300;
+
             Label overrideFile_Label = new Label();
+            SinglePDFForm.Controls.Add(overrideFile_Label);
             overrideFile_Label.Location = new Point(x, y);
             overrideFile_Label.Text = "Datei überschreiben:";
             overrideFile_Label.AutoSize = true;
-            SinglePDFForm.Controls.Add(overrideFile_Label);
-
             x += overrideFile_Label.PreferredWidth + 10;
+
             CheckBox overrideFile_Checkbox = new CheckBox();
+            SinglePDFForm.Controls.Add(overrideFile_Checkbox);
             overrideFile_Checkbox.Name = "Override_File";
             overrideFile_Checkbox.Location = new Point(x, y);
             overrideFile_Checkbox.Checked = false;
-            SinglePDFForm.Controls.Add(overrideFile_Checkbox);
-
             x = 40;
             y += textbox_FilePath_Label.Height + 10;
-            System.Windows.Forms.TextBox textbox_FilePath = new System.Windows.Forms.TextBox();
+
+            System.Windows.Forms.TextBox textbox_FilePath = new TextBox();
+            SinglePDFForm.Controls.Add(textbox_FilePath);
+            dictSinglePDFProperties[DocPropertyType.FilePath] = new DocFilePath(textbox_FilePath);
             textbox_FilePath.Name = "SinglePDF_FilePath";
             textbox_FilePath.Location = new System.Drawing.Point(x, y);
             textbox_FilePath.Size = new System.Drawing.Size(600, 20);
-            // if(dictSinglePDFFormContents.ContainsKey(textbox_FilePath.Name))
-            //     textbox_FilePath.Text = dictSinglePDFFormContents[textbox_FilePath.Name];
-            SinglePDFForm.Controls.Add(textbox_FilePath);
-
             x += textbox_FilePath.Size.Width + 10;
-            System.Windows.Forms.Button browseButton = new System.Windows.Forms.Button();
+
+            System.Windows.Forms.Button browseButton = new Button();
+            SinglePDFForm.Controls.Add(browseButton);
             browseButton.Location = new System.Drawing.Point(x, y);
             browseButton.Size = new System.Drawing.Size(100, 50);
             browseButton.Text = "Browse";
             browseButton.BackColor = System.Drawing.ColorTranslator.FromHtml("#C2EAF0");
             browseButton.Click += (sender, e) =>
             {
-                System.Windows.Forms.OpenFileDialog dialog = new System.Windows.Forms.OpenFileDialog();
+                System.Windows.Forms.OpenFileDialog dialog = new OpenFileDialog();
                 dialog.Filter = "PDF files (*.pdf)|*.pdf";
                 if(dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                 {
                     textbox_FilePath.Text = dialog.FileName;
                 }
             };
-            SinglePDFForm.Controls.Add(browseButton);
             
             y += Math.Max(textbox_FilePath.Height, browseButton.Size.Height);
             return y;
@@ -88,57 +113,52 @@ namespace pdfParserByMH
         private int SinglePDFForm_makeHeaderTextBoxControl(int y)
         {
             int x = 40;
-            System.Windows.Forms.Label textbox_Header_Label = new System.Windows.Forms.Label();
-            textbox_Header_Label.Location = new System.Drawing.Point(x, y);
+            Label textbox_Header_Label = new Label();
+            SinglePDFForm.Controls.Add(textbox_Header_Label);
+            textbox_Header_Label.Location = new Point(x, y);
             textbox_Header_Label.Text = "Kopfzeile";
             textbox_Header_Label.AutoSize = true;
-            SinglePDFForm.Controls.Add(textbox_Header_Label);
 
             y += textbox_Header_Label.Height + 10;
-            System.Windows.Forms.TextBox textbox_Header = new System.Windows.Forms.TextBox();
-            textbox_Header.Name = "SinglePDF_Header";
+            TextBox textbox_Header = new TextBox();
+            SinglePDFForm.Controls.Add(textbox_Header);
+            dictSinglePDFProperties[DocPropertyType.Header] = new DocHeader(textbox_Header);
             textbox_Header.Multiline = true;
             textbox_Header.AcceptsReturn = true;
             textbox_Header.AcceptsTab = true;
-            textbox_Header.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            textbox_Header.Location = new System.Drawing.Point(x, y);
-            textbox_Header.Size = new System.Drawing.Size(700, 80);
-            // if(dictSinglePDFFormContents.ContainsKey(textbox_Header.Name))
-            //     textbox_Header.Text = dictSinglePDFFormContents[textbox_Header.Name];
-            SinglePDFForm.Controls.Add(textbox_Header);
+            textbox_Header.ScrollBars = ScrollBars.Vertical;
+            textbox_Header.Location = new Point(x, y);
+            textbox_Header.Size = new Size(700, 80);
 
             y += textbox_Header.Height + 10;
-            System.Windows.Forms.GroupBox box_HeaderXPos = new System.Windows.Forms.GroupBox();
-            box_HeaderXPos.Name = "Box_HeaderXPos";
+            GroupBox box_HeaderXPos = new System.Windows.Forms.GroupBox();
+            SinglePDFForm.Controls.Add(box_HeaderXPos);
             box_HeaderXPos.Text = "Kopfzeile Position";
             box_HeaderXPos.Location = new System.Drawing.Point(x, y);
             box_HeaderXPos.Size = new System.Drawing.Size(700, 60);
             
+            RadioButton rb_HeaderXLeft = new RadioButton();
+            box_HeaderXPos.Controls.Add(rb_HeaderXLeft);
+            RadioButton rb_HeaderXMiddle = new RadioButton();
+            box_HeaderXPos.Controls.Add(rb_HeaderXMiddle);
+            RadioButton rb_HeaderXRight = new RadioButton();
+            box_HeaderXPos.Controls.Add(rb_HeaderXRight);
+            dictSinglePDFProperties[DocPropertyType.HeaderXPos] = new DocHeaderXPos(new RadioButton[] {rb_HeaderXLeft, rb_HeaderXMiddle, rb_HeaderXRight});
+
             int y_boxlocal = 30;
             int x_boxlocal = 30;
             int rb_distance = 100;
-            RadioButton rb_HeaderXLeft = new RadioButton();
-            rb_HeaderXLeft.Name = "RB_XLeft";
+            
             rb_HeaderXLeft.Text = "Links";
             rb_HeaderXLeft.Location = new Point(x_boxlocal, y_boxlocal);
-            rb_HeaderXLeft.Checked = true;
-            box_HeaderXPos.Controls.Add(rb_HeaderXLeft);
-
             x_boxlocal += rb_HeaderXLeft.Size.Width + rb_distance;
-            RadioButton rb_HeaderXMiddle = new RadioButton();
-            rb_HeaderXMiddle.Name = "RB_XMiddle";
+            
             rb_HeaderXMiddle.Text = "Mittig";
             rb_HeaderXMiddle.Location = new Point(x_boxlocal, y_boxlocal);
-            box_HeaderXPos.Controls.Add(rb_HeaderXMiddle);
-
             x_boxlocal += rb_HeaderXMiddle.Size.Width + rb_distance;
-            RadioButton rb_HeaderXRight = new RadioButton();
-            rb_HeaderXRight.Name = "RB_XRight";
+            
             rb_HeaderXRight.Text = "Rechts";
             rb_HeaderXRight.Location = new Point(x_boxlocal, y_boxlocal);
-            box_HeaderXPos.Controls.Add(rb_HeaderXRight);
-
-            SinglePDFForm.Controls.Add(box_HeaderXPos);
 
             y += box_HeaderXPos.Size.Height;
             return y;
@@ -147,56 +167,53 @@ namespace pdfParserByMH
         private int SinglePDFForm_makeFooterTextBoxControl(int y)
         {
             int x = 40;
-            System.Windows.Forms.Label textbox_Footer_Label = new System.Windows.Forms.Label();
-            textbox_Footer_Label.Location = new System.Drawing.Point(x, y);
+            Label textbox_Footer_Label = new Label();
+            SinglePDFForm.Controls.Add(textbox_Footer_Label);
+            textbox_Footer_Label.Location = new Point(x, y);
             textbox_Footer_Label.Text = "Fußzeile";
             textbox_Footer_Label.AutoSize = true;
-            SinglePDFForm.Controls.Add(textbox_Footer_Label);
+            
 
             y += textbox_Footer_Label.Height + 10;
-            System.Windows.Forms.TextBox textbox_Footer = new System.Windows.Forms.TextBox();
-            textbox_Footer.Name = "SinglePDF_Footer";
+            TextBox textbox_Footer = new TextBox();
+            SinglePDFForm.Controls.Add(textbox_Footer);
+            dictSinglePDFProperties[DocPropertyType.Footer] = new DocFooter(textbox_Footer);
             textbox_Footer.Multiline = true;
             textbox_Footer.AcceptsReturn = true;
             textbox_Footer.AcceptsTab = true;
-            textbox_Footer.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            textbox_Footer.Location = new System.Drawing.Point(x, y);
-            textbox_Footer.Size = new System.Drawing.Size(700, 80);
-            SinglePDFForm.Controls.Add(textbox_Footer);
+            textbox_Footer.ScrollBars = ScrollBars.Vertical;
+            textbox_Footer.Location = new Point(x, y);
+            textbox_Footer.Size = new Size(700, 80);
+            
 
             y += textbox_Footer.Height + 10;
-            System.Windows.Forms.GroupBox box_FooterXPos = new System.Windows.Forms.GroupBox();
-            box_FooterXPos.Name = "Box_FooterXPos";
+            GroupBox box_FooterXPos = new GroupBox();
+            SinglePDFForm.Controls.Add(box_FooterXPos);
             box_FooterXPos.Text = "Fußzeile Position";
-            box_FooterXPos.Location = new System.Drawing.Point(x, y);
-            box_FooterXPos.Size = new System.Drawing.Size(700, 60);
+            box_FooterXPos.Location = new Point(x, y);
+            box_FooterXPos.Size = new Size(700, 60);
+
+            RadioButton rb_FooterXLeft = new RadioButton();
+            box_FooterXPos.Controls.Add(rb_FooterXLeft);
+            RadioButton rb_FooterXMiddle = new RadioButton();
+            box_FooterXPos.Controls.Add(rb_FooterXMiddle);
+            RadioButton rb_FooterXRight = new RadioButton();
+            box_FooterXPos.Controls.Add(rb_FooterXRight);
+            dictSinglePDFProperties[DocPropertyType.FooterXPos] = new DocFooterXPos(new RadioButton[] {rb_FooterXLeft, rb_FooterXMiddle, rb_FooterXRight});
             
             int y_boxlocal = 30;
             int x_boxlocal = 30;
             int rb_distance = 100;
-            RadioButton rb_FooterXLeft = new RadioButton();
-            rb_FooterXLeft.Name = "RB_XLeft";
+            
             rb_FooterXLeft.Text = "Links";
             rb_FooterXLeft.Location = new Point(x_boxlocal, y_boxlocal);
-            rb_FooterXLeft.Checked = true;
-            box_FooterXPos.Controls.Add(rb_FooterXLeft);
-
             x_boxlocal += rb_FooterXLeft.Size.Width + rb_distance;
-            RadioButton rb_FooterXMiddle = new RadioButton();
-            rb_FooterXMiddle.Name = "RB_XMiddle";
             rb_FooterXMiddle.Text = "Mittig";
             rb_FooterXMiddle.Location = new Point(x_boxlocal, y_boxlocal);
-            box_FooterXPos.Controls.Add(rb_FooterXMiddle);
-
             x_boxlocal += rb_FooterXMiddle.Size.Width + rb_distance;
-            RadioButton rb_FooterXRight = new RadioButton();
-            rb_FooterXRight.Name = "RB_XRight";
             rb_FooterXRight.Text = "Rechts";
             rb_FooterXRight.Location = new Point(x_boxlocal, y_boxlocal);
-            box_FooterXPos.Controls.Add(rb_FooterXRight);
-
-            SinglePDFForm.Controls.Add(box_FooterXPos);
-
+            
             y += box_FooterXPos.Size.Height;
             return y;
         }
@@ -204,48 +221,45 @@ namespace pdfParserByMH
         private int SinglePDFForm_makeVerticalPagesControl(int y)
         {
             int x = 40;
-            System.Windows.Forms.GroupBox groupbox_vertical = new System.Windows.Forms.GroupBox();
-            groupbox_vertical.Name = "Box_VerticalPages";
+            GroupBox groupbox_vertical = new GroupBox();
+            SinglePDFForm.Controls.Add(groupbox_vertical);
             groupbox_vertical.Text = "Seiten vertikal machen:";
-            groupbox_vertical.Location = new System.Drawing.Point(x, y);
-            groupbox_vertical.Size = new System.Drawing.Size(700,110);
+            groupbox_vertical.Location = new Point(x, y);
+            groupbox_vertical.Size = new Size(700,110);
+            groupbox_vertical.Font = new Font("Arial", 12);
+
+            RadioButton rb_NoneVertical = new RadioButton();
+            groupbox_vertical.Controls.Add(rb_NoneVertical);
+            RadioButton rb_AllVertical = new RadioButton();
+            groupbox_vertical.Controls.Add(rb_AllVertical);
+            dictSinglePDFProperties[DocPropertyType.VertPageQuant] = new DocVertPageQuantifier(new RadioButton[] {rb_NoneVertical, rb_AllVertical});
 
             int x_boxlocal = 30;
             int y_boxlocal = 30;
             int rb_distance = 150;
-            System.Windows.Forms.RadioButton rb_NoneVertical = new System.Windows.Forms.RadioButton();
-            rb_NoneVertical.Name = "RB_NoneExceptArray";
+            
             rb_NoneVertical.Text = "Nur angegebene Seiten";
-            rb_NoneVertical.Location = new System.Drawing.Point(x_boxlocal, y_boxlocal);
-            rb_NoneVertical.Size = new System.Drawing.Size(200,20);
-            rb_NoneVertical.Checked = true;
-            groupbox_vertical.Controls.Add(rb_NoneVertical);
-
+            rb_NoneVertical.Location = new Point(x_boxlocal, y_boxlocal);
+            rb_NoneVertical.AutoSize = true;
             x_boxlocal += rb_NoneVertical.Size.Width + rb_distance;
-            System.Windows.Forms.RadioButton rb_AllVertical = new System.Windows.Forms.RadioButton();
-            rb_AllVertical.Name = "RB_AllExceptArray";
             rb_AllVertical.Text = "Alle außer angegebene Seiten";
-            rb_AllVertical.Location = new System.Drawing.Point(x_boxlocal, y_boxlocal);
-            rb_AllVertical.Size = new System.Drawing.Size(250,20);
-            rb_AllVertical.Checked = false;
-            groupbox_vertical.Controls.Add(rb_AllVertical);
+            rb_AllVertical.Location = new Point(x_boxlocal, y_boxlocal);
+            rb_AllVertical.AutoSize = true;
 
+            Label verticalPages_Label = new Label();
+            groupbox_vertical.Controls.Add(verticalPages_Label);
             x_boxlocal = 10;
             y_boxlocal += rb_AllVertical.Size.Height + 10;
-            System.Windows.Forms.Label verticalPages_Label = new System.Windows.Forms.Label();
-            verticalPages_Label.Location = new System.Drawing.Point(x_boxlocal, y_boxlocal);
+            verticalPages_Label.Location = new Point(x_boxlocal, y_boxlocal);
             verticalPages_Label.Text = "Seiten (z.B. 1, 3, 12, ...)";
             verticalPages_Label.AutoSize = true;
-            groupbox_vertical.Controls.Add(verticalPages_Label);
+            x_boxlocal += verticalPages_Label.Width + 10;
 
-            x_boxlocal += verticalPages_Label.PreferredWidth + 10;
-            System.Windows.Forms.TextBox textbox_verticalPages = new System.Windows.Forms.TextBox();
-            textbox_verticalPages.Name = "SinglePDF_VerticalPages";
-            textbox_verticalPages.Location = new System.Drawing.Point(x_boxlocal, y_boxlocal);
-            textbox_verticalPages.Size = new System.Drawing.Size(400,20);
+            TextBox textbox_verticalPages = new TextBox();
             groupbox_vertical.Controls.Add(textbox_verticalPages);
-
-            SinglePDFForm.Controls.Add(groupbox_vertical);
+            dictSinglePDFProperties[DocPropertyType.VertPageNumbers] = new DocVertPageNumbers(textbox_verticalPages);
+            textbox_verticalPages.Location = new Point(x_boxlocal, y_boxlocal);
+            textbox_verticalPages.Size = new Size(400,20);
 
             y += groupbox_vertical.Size.Height;
             return y;
@@ -254,48 +268,44 @@ namespace pdfParserByMH
         private int SinglePDFForm_makeHorizontalPagesControl(int y)
         {
             int x = 40;
-            System.Windows.Forms.GroupBox groupbox_horizontal = new System.Windows.Forms.GroupBox();
-            groupbox_horizontal.Name = "Box_HorizontalPages";
+            GroupBox groupbox_horizontal = new GroupBox();
+            SinglePDFForm.Controls.Add(groupbox_horizontal);
             groupbox_horizontal.Text = "Seiten horizontal machen:";
-            groupbox_horizontal.Location = new System.Drawing.Point(x, y);
-            groupbox_horizontal.Size = new System.Drawing.Size(700,110);
+            groupbox_horizontal.Location = new Point(x, y);
+            groupbox_horizontal.Size = new Size(700,110);
+
+            RadioButton rb_NoneHorizontal = new RadioButton();
+            groupbox_horizontal.Controls.Add(rb_NoneHorizontal);
+            RadioButton rb_AllHorizontal = new RadioButton();
+            groupbox_horizontal.Controls.Add(rb_AllHorizontal);
+            dictSinglePDFProperties[DocPropertyType.HoriPageQuant] = new DocHoriPageQuantifier(new RadioButton[] {rb_NoneHorizontal, rb_AllHorizontal});
 
             int x_boxlocal = 30;
             int y_boxlocal = 30;
             int rb_distance = 150;
-            System.Windows.Forms.RadioButton rb_NoneHorizontal = new System.Windows.Forms.RadioButton();
-            rb_NoneHorizontal.Name = "RB_NoneExceptArray";
+            
             rb_NoneHorizontal.Text = "Nur angegebene Seiten";
-            rb_NoneHorizontal.Location = new System.Drawing.Point(x_boxlocal, y_boxlocal);
-            rb_NoneHorizontal.Size = new System.Drawing.Size(200,20);
-            rb_NoneHorizontal.Checked = true;
-            groupbox_horizontal.Controls.Add(rb_NoneHorizontal);
-
+            rb_NoneHorizontal.Location = new Point(x_boxlocal, y_boxlocal);
+            rb_NoneHorizontal.AutoSize = true;
             x_boxlocal += rb_NoneHorizontal.Size.Width + rb_distance;
-            System.Windows.Forms.RadioButton rb_AllHorizontal = new System.Windows.Forms.RadioButton();
-            rb_AllHorizontal.Name = "RB_AllExceptArray";
             rb_AllHorizontal.Text = "Alle außer angegebene Seiten";
-            rb_AllHorizontal.Location = new System.Drawing.Point(x_boxlocal, y_boxlocal);
-            rb_AllHorizontal.Size = new System.Drawing.Size(250,20);
-            rb_AllHorizontal.Checked = false;
-            groupbox_horizontal.Controls.Add(rb_AllHorizontal);
+            rb_AllHorizontal.Location = new Point(x_boxlocal, y_boxlocal);
+            rb_AllHorizontal.AutoSize = true;
 
+            Label horizontalPages_Label = new Label();
+            groupbox_horizontal.Controls.Add(horizontalPages_Label);
             x_boxlocal = 10;
             y_boxlocal += rb_AllHorizontal.Size.Height + 10;
-            System.Windows.Forms.Label horizontalPages_Label = new System.Windows.Forms.Label();
-            horizontalPages_Label.Location = new System.Drawing.Point(x_boxlocal, y_boxlocal);
+            horizontalPages_Label.Location = new Point(x_boxlocal, y_boxlocal);
             horizontalPages_Label.Text = "Seiten (z.B. 1, 3, 12, ...)";
             horizontalPages_Label.AutoSize = true;
-            groupbox_horizontal.Controls.Add(horizontalPages_Label);
+            x_boxlocal += horizontalPages_Label.Width + 10;
 
-            x_boxlocal += horizontalPages_Label.PreferredWidth + 10;
-            System.Windows.Forms.TextBox textbox_horizontalPages = new System.Windows.Forms.TextBox();
-            textbox_horizontalPages.Name = "SinglePDF_HorizontalPages";
-            textbox_horizontalPages.Location = new System.Drawing.Point(x_boxlocal, y_boxlocal);
-            textbox_horizontalPages.Size = new System.Drawing.Size(400,20);
+            TextBox textbox_horizontalPages = new TextBox();
             groupbox_horizontal.Controls.Add(textbox_horizontalPages);
-
-            SinglePDFForm.Controls.Add(groupbox_horizontal);
+            dictSinglePDFProperties[DocPropertyType.HoriPageNumbers] = new DocHoriPageNumbers(textbox_horizontalPages);
+            textbox_horizontalPages.Location = new Point(x_boxlocal, y_boxlocal);
+            textbox_horizontalPages.Size = new Size(400,20);
 
             y += groupbox_horizontal.Size.Height;
             return y;
@@ -304,41 +314,42 @@ namespace pdfParserByMH
         private int SinglePDFForm_makePageScalingAndTextColorControl(int y)
         {
             int x = 40;
-            System.Windows.Forms.Label scalierung_Label = new System.Windows.Forms.Label();
-            scalierung_Label.Location = new System.Drawing.Point(x, y);
+            Label scalierung_Label = new Label();
+            SinglePDFForm.Controls.Add(scalierung_Label);
+            scalierung_Label.Location = new Point(x, y);
             scalierung_Label.Text = "Seitenskalierung Faktor:";
             scalierung_Label.AutoSize = true;
-            SinglePDFForm.Controls.Add(scalierung_Label);
+            x += scalierung_Label.Width + 5;
 
-            x += scalierung_Label.PreferredWidth + 5;
-            System.Windows.Forms.TextBox textbox_Scalierung = new System.Windows.Forms.TextBox();
-            textbox_Scalierung.Name = "SinglePDF_Scaling";
-            textbox_Scalierung.Location = new System.Drawing.Point(x, y);
-            textbox_Scalierung.Size = new System.Drawing.Size(100,20);
-            textbox_Scalierung.Text = "1.0";
+            TextBox textbox_Scalierung = new TextBox();
             SinglePDFForm.Controls.Add(textbox_Scalierung);
-
-            x += textbox_Scalierung.PreferredSize.Width + 200;
+            dictSinglePDFProperties[DocPropertyType.ScaleFactor] = new DocScaleFactor(textbox_Scalierung);
+            textbox_Scalierung.Location = new Point(x, y);
+            textbox_Scalierung.Size = new Size(100,20);
+            x += textbox_Scalierung.Width + 100;
+            
             Label colorLabel = new Label();
+            SinglePDFForm.Controls.Add(colorLabel);
             colorLabel.Location = new Point(x, y);
             colorLabel.Text = "Textfarbe:";
             colorLabel.AutoSize = true;
-            SinglePDFForm.Controls.Add(colorLabel);
+            x += colorLabel.Width + 5;
 
-            x += colorLabel.PreferredWidth + 5;
             Label colorName = new Label();
-            colorName.Name = "ColorName";
-            colorName.Location = new Point(x, y);
-            colorName.Text = "#000000";
-            colorName.AutoSize = true;
             SinglePDFForm.Controls.Add(colorName);
+            dictSinglePDFProperties[DocPropertyType.TextColor] = new DocTextColor(colorName);
+            colorName.Location = new Point(x, y);
+            colorName.AutoSize = true;
+            colorName.PerformLayout();
+            colorName.Text = "#000000";
+            x += colorName.Width + 5;
 
-            x += colorName.PreferredWidth + 10;
             Button colorButton = new Button();
+            SinglePDFForm.Controls.Add(colorButton);
             colorButton.Location = new Point(x, y);
             colorButton.Size = new Size(100,50);
             colorButton.Text = "Farbe Wählen";
-            colorButton.BackColor = System.Drawing.ColorTranslator.FromHtml("#C2EAF0");
+            colorButton.BackColor = ColorTranslator.FromHtml("#C2EAF0");
             colorButton.Click += (sender, e) =>
             {
                 ColorDialog dialog = new ColorDialog();
@@ -351,8 +362,7 @@ namespace pdfParserByMH
                     colorName.ForeColor = dialog.Color;
                 }
             };
-            SinglePDFForm.Controls.Add(colorButton);
-
+            
             int[] heights = new int[] {scalierung_Label.Height, 
                                     textbox_Scalierung.Height, 
                                     colorName.Height, 
@@ -364,19 +374,18 @@ namespace pdfParserByMH
         private int SinglePDFForm_makeOKButtonControl(int y)
         {
             int x = 350;
-            System.Windows.Forms.Button okButton = new System.Windows.Forms.Button();
+            Button okButton = new Button();
+            SinglePDFForm.Controls.Add(okButton);
             okButton.Location = new System.Drawing.Point(x, y);
             okButton.Size = new System.Drawing.Size(100,50);
-            okButton.Text = "OK";
+            okButton.Text = "Stempeln";
             okButton.BackColor = System.Drawing.ColorTranslator.FromHtml("#C2EAF0");
             okButton.Click += (sender, e) =>
             {
+                form.DialogResult = DialogResult.OK;
                 progState = ProgramState.DoSingelPDF;
-                form.DialogResult = System.Windows.Forms.DialogResult.OK;
                 form.Close();
             };
-            SinglePDFForm.Controls.Add(okButton);
-
             y += okButton.Size.Height;
             return y;
         }

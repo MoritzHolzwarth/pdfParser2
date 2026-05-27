@@ -1,16 +1,10 @@
-
-
-using System;
-using System.ComponentModel;
-using System.Linq;
-using System.Security.AccessControl;
+using System.Drawing;
+using System.Security.Cryptography;
 using System.Windows.Forms;
-using System.Windows.Markup;
-using pdfParserByMH;
 
 namespace pdfParserByMH
 {
-    public enum DocPropertyType {Null, FolderName, ApproxFileName, Header, Footer, HeaderXPos, FooterXPos, VertPageQuant, HoriPageQuant, VertPageNumbers, HoriPageNumbers, ScaleFactor, TextColor}
+    public enum DocPropertyType {Null, FilePath, FolderName, ApproxFileName, Header, Footer, HeaderXPos, FooterXPos, VertPageQuant, HoriPageQuant, VertPageNumbers, HoriPageNumbers, ScaleFactor, TextColor}
     public class DocProperty
     {
         public static string unv = "/unverändert";
@@ -208,6 +202,13 @@ namespace pdfParserByMH
         }
     }
 
+    public class DocFilePath : DocStringProperty
+    {
+        public override DocPropertyType type {get {return DocPropertyType.FilePath;}}
+        public DocFilePath(TextBox tb = null) : base(tb)
+        {}
+    }
+
 
     public class DocFolderName : DocStringProperty
     {
@@ -298,7 +299,7 @@ namespace pdfParserByMH
             }
             double val;
             if(!double.TryParse(txt, out val))
-                throw new System.Exception("Error in DocScaleFactor.read(): non-numberic value :" + txt);
+                throw new System.Exception("Error in DocScaleFactor.read(): non-numeric value :" + txt);
             value = val;
             hasChanged = true;
         }
@@ -331,7 +332,7 @@ namespace pdfParserByMH
                 hasChanged = false;
                 return;
             }
-            System.Drawing.Color col = System.Drawing.ColorTranslator.FromHtml(txt);
+            Color col = ColorTranslator.FromHtml(txt);
             double convert = 1.0/255;
             value = new double[] {convert*col.R, convert*col.G, convert*col.B};
             hasChanged = true;
@@ -339,11 +340,24 @@ namespace pdfParserByMH
         public override bool write()
         {
             double[] rgb = (double[])value; //rgb values in form 0 - 1
-            if(rgb.Length != 3)
-                throw new System.Exception("Erron in DocTextColor.write(): More than 3 rgb values!");
+            string hex = rgbDoubleColorToHexStringColor(rgb);
+            label.Text = hex;
+            label.ForeColor = ColorTranslator.FromHtml(hex);
+            return true;
+        }
+        public override void clear()
+        {
+            value = -1;
+            label.Text = unv;
+            label.ForeColor = Color.Black;
+        }
 
-            int[] RGB = new int[rgb.Length]; //rgb values in form 0 - 255
-            for(int i=0; i<rgb.Length; i++)
+        public static string rgbDoubleColorToHexStringColor(double[] rgb)
+        {
+            if(rgb.Length != 3)
+                throw new System.Exception("Erron in rgbDoubleColorToHexStringColor(): More than 3 rgb values!");
+            int[] RGB = new int[rgb.Length];
+            for(int i=0; i<3; i++)
             {
                 if(rgb[i] < 0)
                     throw new System.Exception("Error in rgbDoubleColorToHexStringColor(): rgb value < 0!");
@@ -352,17 +366,9 @@ namespace pdfParserByMH
                 else
                     RGB[i] = (int)rgb[i]*255;
             }
-            string txt = string.Format("#{0:X2}{1:X2}{2:X2}", RGB[0], RGB[1], RGB[2]);
-            System.Drawing.Color col = System.Drawing.ColorTranslator.FromHtml(txt);
-            label.Text = txt;
-            label.ForeColor = col;
-            return true;
-        }
-        public override void clear()
-        {
-            value = -1;
-            label.Text = unv;
-            label.ForeColor = System.Drawing.Color.Black;
+            return string.Format("#{0:X2}{1:X2}{2:X2}", RGB[0], RGB[1], RGB[2]);
         }
     }
+
+    
 }

@@ -9,14 +9,16 @@ namespace pdfParserByMH
     {
         private void allDokuStempeln()
         {
+            AllDokuForm_readFields();
+//---------------
             if(!prepare_AllDokuStempeln())
                 return;
-
+//--------------
             System.Collections.Generic.List<string> lstMissedFiles = new System.Collections.Generic.List<string>();
             foreach(string docName in dictDocs.Keys)
             {
                 DocData docdata = dictDocs[docName];
-                if(docdata.doStempeln)
+                if(!docdata.selected)
                     continue;
                 Console.WriteLine(string.Format("Now Stempeln: {0}", docName));
                 string subFolderName = docdata.folderName;
@@ -104,7 +106,7 @@ namespace pdfParserByMH
                 return false;
             if(!getDokuRev())
                 return false;
-            if(dictDocs["Abfalldatenblatt"].doStempeln)
+            if(dictDocs["Abfalldatenblatt"].selected)
             {
                 if(!getADBRev())
                     return false;
@@ -225,19 +227,13 @@ namespace pdfParserByMH
 
         private string insertPlaceHolders(string txt)
         {
-            string newTxt;
+            string newTxt = txt;
             if(dokuID != null)
-                newTxt = Regex.Replace(txt,"/Doku_ID", dokuID);
-            else
-                newTxt = Regex.Replace(txt,"/Doku_ID", "?");
+                newTxt = Regex.Replace(newTxt, dokuID_placeholder, dokuID);
             if(dokuRev != null)
-                newTxt = Regex.Replace(newTxt, "/Doku_Rev", dokuRev);
-            else
-                newTxt = Regex.Replace(newTxt, "/Doku_Rev", "?");
+                newTxt = Regex.Replace(newTxt, DokuRev_placeholder, dokuRev);
             if(ADBRev != null)
-                newTxt = Regex.Replace(newTxt, "/ADB_Rev", ADBRev);
-            else
-                newTxt = Regex.Replace(newTxt, "/ADB_Rev", "?");
+                newTxt = Regex.Replace(newTxt, ADBRev_placeholder, ADBRev);
             return newTxt;
         }
     }

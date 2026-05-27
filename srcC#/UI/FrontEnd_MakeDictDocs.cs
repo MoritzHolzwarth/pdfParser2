@@ -1,14 +1,15 @@
-using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Windows.Forms;
-using System.Linq;
 
 namespace pdfParserByMH
 {
     public class DocData
     {
         public Dictionary<DocPropertyType,object> dictDocProperties {get; set;}
+        public string filePath
+        {
+            get {return (string)dictDocProperties[DocPropertyType.FilePath];}
+            set {dictDocProperties[DocPropertyType.FilePath] = value;}
+        }
         public string folderName
         {
             get {return (string)dictDocProperties[DocPropertyType.FolderName];}
@@ -69,7 +70,7 @@ namespace pdfParserByMH
             get {return (double[])dictDocProperties[DocPropertyType.TextColor];}
             set {dictDocProperties[DocPropertyType.TextColor] = value;}
         }
-        public bool doStempeln;
+        public bool selected;
         public bool contentHasChanged {get; set;}
         public DocData(string folder = "", string file = "")
         {
@@ -77,7 +78,7 @@ namespace pdfParserByMH
             folderName = folder;
             fileApproxName = file;
             contentHasChanged = false;
-            doStempeln = false;
+            selected = false;
         }
     }
 
@@ -123,8 +124,8 @@ namespace pdfParserByMH
             {
                 if(kvp.Key == "Abfalldatenblatt")
                 {
-                    kvp.Value.header = "A. ADB Rev./ADB_Rev,\nDoku-ID: /Doku_ID: Rev./Doku_Rev";
-                    kvp.Value.footer = "Das Original ist an dieser Stelle rot gestempelt.";
+                    kvp.Value.header = string.Format("A. ADB Rev.{0},\r\nDoku-ID: {1}: Rev.{2}", ADBRev_placeholder, dokuID_placeholder, DokuRev_placeholder);  //Note: This text may be written into a Windows.TextBox,
+                    kvp.Value.footer = "Das Original ist an dieser Stelle rot gestempelt.";                                                                     //which requires \r\n for line break, not just \n!
                     kvp.Value.headerXPos = PageXPosition.Middle;
                     kvp.Value.footerXPos = PageXPosition.Left;
                     kvp.Value.vertPagesQuantifier = PageQuantifiers.NoneExceptArray;
@@ -136,8 +137,8 @@ namespace pdfParserByMH
                 }
                 else
                 {
-                    kvp.Value.header = "/Doku_ID";
-                    kvp.Value.footer = "Seite /PageNum von /PagesCount";
+                    kvp.Value.header = dokuID_placeholder;
+                    kvp.Value.footer = "Seite {pagenum} von {pagecount}";
                     kvp.Value.headerXPos = PageXPosition.Middle;
                     kvp.Value.footerXPos = PageXPosition.Right;
                     kvp.Value.vertPagesQuantifier = PageQuantifiers.NoneExceptArray;
