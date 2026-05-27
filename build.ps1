@@ -9,13 +9,13 @@ if (-not (Test-Path $csc)) {
     exit 1
 }
 
-$webextension = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\System.Web.Extension.dll"
+$webextension = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\System.Web.Extensions.dll"
 if (-not (Test-Path $webextension)) {
     # Fallback to 32-bit framework
-    $webextension = "C:\Windows\Microsoft.NET\Framework\v4.0.30319\System.Web.Extension.dll"
+    $webextension = "C:\Windows\Microsoft.NET\Framework\v4.0.30319\System.Web.Extensions.dll"
 }
 if (-not (Test-Path $webextension)) {
-    Write-Error "System.Web.Extension.dll not found. Is .NET Framework 4.x installed?"
+    Write-Error "System.Web.Extensions.dll not found. Is .NET Framework 4.x installed?"
     exit 1
 }
 
