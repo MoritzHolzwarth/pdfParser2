@@ -1,4 +1,4 @@
-﻿
+
 $csc = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
 if (-not (Test-Path $csc)) {
     # Fallback to 32-bit framework
@@ -6,6 +6,16 @@ if (-not (Test-Path $csc)) {
 }
 if (-not (Test-Path $csc)) {
     Write-Error "csc.exe not found. Is .NET Framework 4.x installed?"
+    exit 1
+}
+
+$webextension = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\System.Web.Extension.dll"
+if (-not (Test-Path $webextension)) {
+    # Fallback to 32-bit framework
+    $webextension = "C:\Windows\Microsoft.NET\Framework\v4.0.30319\System.Web.Extension.dll"
+}
+if (-not (Test-Path $webextension)) {
+    Write-Error "System.Web.Extension.dll not found. Is .NET Framework 4.x installed?"
     exit 1
 }
 
@@ -24,7 +34,7 @@ $outPath = Join-Path "$PSScriptRoot\bin\Debug\net472" "pdfParser2.exe"
 
 $cscargs = @("/target:exe", "/platform:anycpu", "/optimize+", "/langversion:5", "/out:`"$outPath`"") +
         ($fontFiles | ForEach-Object {"/resource:`"$_`",Font.$($_.Substring($fontDir.Length+1))"}) +
-        ("/resource:System.Web.Extensions.dll") + #This is needed for the JavascriptSerialozer used to easily read/write to .json filed
+        ("/reference:`"$webextension`"") + #This is needed for the JavascriptSerialozer used to easily read/write to .json filed
         ($sourceFiles | ForEach-Object {"`"$_`""})
 
 Write-Host "Compiler. $csc"
