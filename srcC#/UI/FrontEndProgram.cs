@@ -54,12 +54,12 @@ namespace pdfParserByMH
             form.Font = new Font("Arial", 12);
             form.Text = "PDF Stempeln";
             form.AutoScaleMode = AutoScaleMode.Font;
-            form.Size = new Size(800,1000);
+            form.Size = formSize;
             form.AutoScroll = true;
 
             tabControl = new TabControl();
             form.Controls.Add(tabControl);
-            tabControl.Size = formSize;
+            tabControl.Size = new Size(800,1000);
             
             makeDictDocs();
             loadData();
