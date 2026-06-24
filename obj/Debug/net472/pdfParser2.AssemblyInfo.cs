@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("pdfParser2")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+df0eecd27ba0a691c1609ec0b5a04a2fb6c0dfa8")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4dc1083260b056a1ef644d36bf10dc95edced61b")]
 [assembly: System.Reflection.AssemblyProductAttribute("pdfParser2")]
 [assembly: System.Reflection.AssemblyTitleAttribute("pdfParser2")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

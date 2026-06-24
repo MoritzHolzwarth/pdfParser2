@@ -139,35 +139,36 @@ namespace pdfParserByMH
             return false; //page is already horizonzal, no adjustment needed
         }
 
-        public void addHeaderAndFooter(string headerText, string footerText, PageXPosition headerX, PageXPosition footerX, string fontToken, string fontName, int fontSize, double[] fontColor, 
+        public void addHeaderAndFooter_2(string headerText, string footerText, PageXPosition headerX, PageXPosition footerX, string fontToken, string fontName, int fontSize, double[] fontColor, 
                                         bool makeVertical =false, bool makeHorizontal =false, int xDistance = 20, int yDistance = 20)
         {
-            bool rotationApplied = enforcePageOriantation(makeVertical, makeHorizontal);
+            enforcePageOriantation(makeVertical, makeHorizontal);   //This is only a sigle flag for the renderer. Does nothing to any stream or mediaBox.
+            bool defaultIsHorizontal = mediaBox[2] > mediaBox[3];
             ValueTuple<string[], double[]> formatHeaderResult = formatStringForPDFStream(headerText, fontName, fontSize);
             ValueTuple<string[], double[]> formatFooterResult = formatStringForPDFStream(footerText, fontName, fontSize);
             string[] arrHeaderText = formatHeaderResult.Item1;
             double[] arrHeaderTextWidths = formatHeaderResult.Item2;
             string[] arrFooterText = formatFooterResult.Item1;
             double[] arrFooterTextWidths = formatFooterResult.Item2;
-            double headerXPos = getTextLineXPosValue(headerX, mediaBox, arrHeaderTextWidths[0], xDistance, rotationApplied);
-            double footerXPos = getTextLineXPosValue(footerX, mediaBox, arrFooterTextWidths[0], xDistance, rotationApplied);
-            double headerYPos = mediaBox[1] + mediaBox[3] - yDistance;
-            double footerYPos = mediaBox[1] + yDistance + (rotationApplied? (mediaBox[3] - mediaBox[2]): 0);
+            double headerXPos = getTextLineXPosValue_2(headerX, mediaBox, arrHeaderTextWidths[0], xDistance, defaultIsHorizontal);
+            double footerXPos = getTextLineXPosValue_2(footerX, mediaBox, arrFooterTextWidths[0], xDistance, defaultIsHorizontal);
+            double headerYPos = mediaBox[1] + mediaBox[3] - yDistance + (defaultIsHorizontal? mediaBox[2] - mediaBox[3]: 0);
+            double footerYPos = mediaBox[1] + yDistance;
             double[] header_relXPos = getTextLinesRelativeXPosValues(headerX, arrHeaderTextWidths, arrHeaderTextWidths[0]);
             double[] footer_relXPos = getTextLinesRelativeXPosValues(footerX, arrFooterTextWidths, arrFooterTextWidths[0]);
             
-            string headerCommand = getTextBlockStreamCommand(arrHeaderText, headerXPos, header_relXPos, headerYPos, fontSize, fontToken, fontColor, rotationApplied);
-            string footerCommand = getTextBlockStreamCommand(arrFooterText, footerXPos, footer_relXPos, footerYPos, fontSize, fontToken, fontColor, rotationApplied);
+            string headerCommand = getTextBlockStreamCommand_2(arrHeaderText, headerXPos, header_relXPos, headerYPos, fontSize, fontToken, fontColor, defaultIsHorizontal);
+            string footerCommand = getTextBlockStreamCommand_2(arrFooterText, footerXPos, footer_relXPos, footerYPos, fontSize, fontToken, fontColor, defaultIsHorizontal);
             string fullCommand = string.Format("\n/HeaderAndFooterByMH BMC\n{0}\n{1}\nEMC\n", headerCommand, footerCommand);
             
             pdfObjectReference headerFooterStreamObRef = document.createNewStreamFromUncompressedData(Utils.stringToBytes(fullCommand));
             addObRefToContent(headerFooterStreamObRef, false); //'false' meand 'add at end of /Contents'
         }
 
-        private string getTextBlockStreamCommand(string[] arrText, double xpos, double[] rel_xpos, double ypos, int fontSize, string fontToken, double[] fontColor, bool rotate)
+        private string getTextBlockStreamCommand_2(string[] arrText, double xpos, double[] rel_xpos, double ypos, int fontSize, string fontToken, double[] fontColor, bool rotate)
         {
             int lineHeight = -Convert.ToInt32(fontSize*1.2);
-            string cmCommand = rotate? string.Format("0 1 -1 0 {0} 0 cm", mediaBox[3]): "";
+            string cmCommand = rotate? string.Format("0 -1 1 0 0 0 cm"): "";
             string rgCommand = string.Format("{0} {1} {2} rg", fontColor[0], fontColor[1], fontColor[2]);
             string tfCommand = string.Format("{0} {1} Tf", fontToken, fontSize);
             string tlCommand = string.Format("{0} TL", lineHeight); 
@@ -187,16 +188,81 @@ namespace pdfParserByMH
             return fullCommand;
         }
 
-        private double getTextLineXPosValue(PageXPosition xpos, double[] mediaBox, double textWidth, double xBoundary, bool rotationApplied)
+        private double getTextLineXPosValue_2(PageXPosition xpos, double[] mediaBox, double textWidth, double xBoundary, bool rotated)
+        {
+            switch (xpos)
+            {
+                case PageXPosition.Left:
+                    return mediaBox[0] + xBoundary - (rotated? mediaBox[3]: 0);
+                case PageXPosition.Middle:
+                    return 0.5*(-textWidth + (rotated? mediaBox[1] - mediaBox[3] : mediaBox[2] + mediaBox[0]));
+                case PageXPosition.Right:
+                    return -textWidth - xBoundary + (rotated? mediaBox[1]: mediaBox[2] + mediaBox[0]);
+                default:
+                    //throw new System.Exception($"Error in pdfPage.getHeaderFooterXPositionValue(): unknown PageXPosition Value {xpos}!"); > C# 5
+                    throw new System.Exception(string.Format("Error in pdfPage.getHeaderFooterXPositionValue(): unknown PageXPosition Value {0}!", xpos));
+            }
+        }
+
+        public void addHeaderAndFooter(string headerText, string footerText, PageXPosition headerX, PageXPosition footerX, string fontToken, string fontName, int fontSize, double[] fontColor, 
+                                        bool makeVertical =false, bool makeHorizontal =false, int xDistance = 20, int yDistance = 20)
+        {
+            enforcePageOriantation(makeVertical, makeHorizontal);   //This is only a sigle flag for the renderer. Does nothing to any stream or mediaBox.
+            bool defaultIsHorizontal = mediaBox[2] > mediaBox[3];
+            ValueTuple<string[], double[]> formatHeaderResult = formatStringForPDFStream(headerText, fontName, fontSize);
+            ValueTuple<string[], double[]> formatFooterResult = formatStringForPDFStream(footerText, fontName, fontSize);
+            string[] arrHeaderText = formatHeaderResult.Item1;
+            double[] arrHeaderTextWidths = formatHeaderResult.Item2;
+            string[] arrFooterText = formatFooterResult.Item1;
+            double[] arrFooterTextWidths = formatFooterResult.Item2;
+            double headerXPos = getTextLineXPosValue(headerX, mediaBox, arrHeaderTextWidths[0], xDistance, defaultIsHorizontal);
+            double footerXPos = getTextLineXPosValue(footerX, mediaBox, arrFooterTextWidths[0], xDistance, defaultIsHorizontal);
+            double headerYPos = mediaBox[1] + mediaBox[3] - yDistance - (defaultIsHorizontal? mediaBox[3]: 0);
+            double footerYPos = mediaBox[1] + yDistance - (defaultIsHorizontal? mediaBox[2]: 0);
+            double[] header_relXPos = getTextLinesRelativeXPosValues(headerX, arrHeaderTextWidths, arrHeaderTextWidths[0]);
+            double[] footer_relXPos = getTextLinesRelativeXPosValues(footerX, arrFooterTextWidths, arrFooterTextWidths[0]);
+            
+            string headerCommand = getTextBlockStreamCommand(arrHeaderText, headerXPos, header_relXPos, headerYPos, fontSize, fontToken, fontColor, defaultIsHorizontal);
+            string footerCommand = getTextBlockStreamCommand(arrFooterText, footerXPos, footer_relXPos, footerYPos, fontSize, fontToken, fontColor, defaultIsHorizontal);
+            string fullCommand = string.Format("\n/HeaderAndFooterByMH BMC\n{0}\n{1}\nEMC\n", headerCommand, footerCommand);
+            
+            pdfObjectReference headerFooterStreamObRef = document.createNewStreamFromUncompressedData(Utils.stringToBytes(fullCommand));
+            addObRefToContent(headerFooterStreamObRef, false); //'false' meand 'add at end of /Contents'
+        }
+
+        private string getTextBlockStreamCommand(string[] arrText, double xpos, double[] rel_xpos, double ypos, int fontSize, string fontToken, double[] fontColor, bool rotate)
+        {
+            int lineHeight = -Convert.ToInt32(fontSize*1.2);
+            string cmCommand = rotate? string.Format("0 1 -1 0 0 0 cm"): "";
+            string rgCommand = string.Format("{0} {1} {2} rg", fontColor[0], fontColor[1], fontColor[2]);
+            string tfCommand = string.Format("{0} {1} Tf", fontToken, fontSize);
+            string tlCommand = string.Format("{0} TL", lineHeight); 
+            System.Text.StringBuilder strBuild = new System.Text.StringBuilder();
+            strBuild.Append(string.Format("{0} {1} Td", xpos + rel_xpos[0], ypos));
+            strBuild.Append(string.Format("\n{0} Tj", arrText[0]));
+            if(arrText.Length > 1)
+            {
+                for(int i=1; i<arrText.Length; i++)
+                {
+                    strBuild.Append(string.Format("\n{0} {1} Td", rel_xpos[i], lineHeight));
+                    strBuild.Append(string.Format("\n{0} Tj", arrText[i]));
+                }
+            }
+            string tdtjCommand = strBuild.ToString();
+            string fullCommand = string.Format("q\n{0}\n BT \n{1}\n{2}\n{3}\n{4}\n ET \nQ", cmCommand, rgCommand, tfCommand, tlCommand, tdtjCommand);
+            return fullCommand;
+        }
+
+        private double getTextLineXPosValue(PageXPosition xpos, double[] mediaBox, double textWidth, double xBoundary, bool rotated)
         {
             switch (xpos)
             {
                 case PageXPosition.Left:
                     return mediaBox[0] + xBoundary;
                 case PageXPosition.Middle:
-                    return 0.5*(-textWidth + (rotationApplied? mediaBox[3] + mediaBox[1]: mediaBox[2] + mediaBox[0]));
+                    return 0.5*(-textWidth + (rotated? mediaBox[3] + mediaBox[1]: mediaBox[2] + mediaBox[0]));
                 case PageXPosition.Right:
-                    return -textWidth - xBoundary + (rotationApplied? mediaBox[3] + mediaBox[1]: mediaBox[2] + mediaBox[0]);
+                    return -textWidth - xBoundary + (rotated? mediaBox[3] + mediaBox[1]: mediaBox[2] + mediaBox[0]);
                 default:
                     //throw new System.Exception($"Error in pdfPage.getHeaderFooterXPositionValue(): unknown PageXPosition Value {xpos}!"); > C# 5
                     throw new System.Exception(string.Format("Error in pdfPage.getHeaderFooterXPositionValue(): unknown PageXPosition Value {0}!", xpos));
