@@ -9,3 +9,13 @@ C:\Users\morit\Desktop\C#\pdfParser2\obj\Debug\net472\pdfParser2.csproj.CoreComp
 C:\Users\morit\Desktop\C#\pdfParser2\obj\Debug\net472\pdfParser2.sourcelink.json
 C:\Users\morit\Desktop\C#\pdfParser2\obj\Debug\net472\pdfParser2.exe
 C:\Users\morit\Desktop\C#\pdfParser2\obj\Debug\net472\pdfParser2.pdb
+C:\Users\Moritz.Holzwarth\Documents\KTE\pdfParser2-Csharp5\bin\Debug\net472\pdfParser2.exe.config
+C:\Users\Moritz.Holzwarth\Documents\KTE\pdfParser2-Csharp5\bin\Debug\net472\pdfParser2.exe
+C:\Users\Moritz.Holzwarth\Documents\KTE\pdfParser2-Csharp5\bin\Debug\net472\pdfParser2.pdb
+C:\Users\Moritz.Holzwarth\Documents\KTE\pdfParser2-Csharp5\obj\Debug\net472\pdfParser2.csproj.AssemblyReference.cache
+C:\Users\Moritz.Holzwarth\Documents\KTE\pdfParser2-Csharp5\obj\Debug\net472\pdfParser2.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Moritz.Holzwarth\Documents\KTE\pdfParser2-Csharp5\obj\Debug\net472\pdfParser2.AssemblyInfoInputs.cache
+C:\Users\Moritz.Holzwarth\Documents\KTE\pdfParser2-Csharp5\obj\Debug\net472\pdfParser2.AssemblyInfo.cs
+C:\Users\Moritz.Holzwarth\Documents\KTE\pdfParser2-Csharp5\obj\Debug\net472\pdfParser2.csproj.CoreCompileInputs.cache
+C:\Users\Moritz.Holzwarth\Documents\KTE\pdfParser2-Csharp5\obj\Debug\net472\pdfParser2.exe
+C:\Users\Moritz.Holzwarth\Documents\KTE\pdfParser2-Csharp5\obj\Debug\net472\pdfParser2.pdb

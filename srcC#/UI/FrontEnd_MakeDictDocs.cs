@@ -137,7 +137,7 @@ namespace pdfParserByMH
                 }
                 else
                 {
-                    kvp.Value.header = dokuID_placeholder;
+                    kvp.Value.header = "";
                     kvp.Value.footer = "Seite {pagenum} von {pagecount}";
                     kvp.Value.headerXPos = PageXPosition.Middle;
                     kvp.Value.footerXPos = PageXPosition.Right;

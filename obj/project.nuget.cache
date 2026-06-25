@@ -1,11 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "B0dscUYdVx0=",
+  "dgSpecHash": "NtjZFJ1ifwM=",
   "success": true,
-  "projectFilePath": "C:\\Users\\morit\\Desktop\\C#\\pdfParser2\\pdfParser2.csproj",
+  "projectFilePath": "C:\\Users\\Moritz.Holzwarth\\Documents\\KTE\\pdfParser2-Csharp5\\pdfParser2.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\morit\\.nuget\\packages\\microsoft.netframework.referenceassemblies\\1.0.3\\microsoft.netframework.referenceassemblies.1.0.3.nupkg.sha512",
-    "C:\\Users\\morit\\.nuget\\packages\\microsoft.netframework.referenceassemblies.net472\\1.0.3\\microsoft.netframework.referenceassemblies.net472.1.0.3.nupkg.sha512"
+    "C:\\Users\\Moritz.Holzwarth\\.nuget\\packages\\microsoft.netframework.referenceassemblies\\1.0.3\\microsoft.netframework.referenceassemblies.1.0.3.nupkg.sha512",
+    "C:\\Users\\Moritz.Holzwarth\\.nuget\\packages\\microsoft.netframework.referenceassemblies.net472\\1.0.3\\microsoft.netframework.referenceassemblies.net472.1.0.3.nupkg.sha512"
   ],
   "logs": []
 }
