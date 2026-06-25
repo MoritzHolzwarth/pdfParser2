@@ -110,7 +110,7 @@ namespace pdfParserByMH
             dictDocs.Add("Verdampferkonzentratanalyse",new DocData("C.1", "C.1 Analyse* Verdampferkonzentrat*_Rev.*.pdf"));
             dictDocs.Add("Klärschlammanalyse",new DocData("C.1", "C.1 Klärschlamm-Analyse* (FSC)_Rev.*.pdf"));
             dictDocs.Add("PSC-Zerlegung",new DocData("C.1", "C.1 PSC-Zerlegung_Rev.*.pdf"));
-            dictDocs.Add("Ablaufplan",new DocData("C.1", "C.1 Ablaufpl*n*_Rev.*.pdf"));
+            dictDocs.Add("Ablaufplan",new DocData("C.2", "C.2 Ablaufpl*n*_Rev.*.pdf"));
             dictDocs.Add("Querkontamination",new DocData("D.2", "D.2 Querkontamination_Rev.*.pdf"));
             dictDocs.Add("Gammamessung Rados",new DocData("D.2", "D.2 Gammamessung* Rados_Rev.*.pdf"));
             dictDocs.Add("Prüfbericht Druckfestigkeit",new DocData("D.2", "D.2 Prüfbericht* Druckfestigkeit_Rev.*.pdf"));
@@ -137,7 +137,7 @@ namespace pdfParserByMH
                 }
                 else
                 {
-                    kvp.Value.header = dokuID_placeholder;
+                    kvp.Value.header = "";
                     kvp.Value.footer = "Seite {pagenum} von {pagecount}";
                     kvp.Value.headerXPos = PageXPosition.Middle;
                     kvp.Value.footerXPos = PageXPosition.Right;
