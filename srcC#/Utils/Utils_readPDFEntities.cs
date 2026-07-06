@@ -300,8 +300,10 @@ namespace pdfParserByMH
             byte[] data = System.Array.Empty<byte>();
             byte[][] possibleBytesBeforeAndAfterData =
             {
-                new byte[] {0x0A}, new byte[] {0x0D, 0x0A}, new byte[] {0x0D}, new byte[] {}
+                new byte[] {0x0A}, new byte[] {0x0D, 0x0A}, new byte[] {0x0D} //only these are allowed by official pdf specification
             };
+            byte[] leadingDelimiter = null;
+            byte[] trailingDelimiter = null;
             bool success = false;
             foreach(byte[] bytesBeforeStream in possibleBytesBeforeAndAfterData)
             {
@@ -309,26 +311,28 @@ namespace pdfParserByMH
                 {
                     if(readStreamDataWithGivenLeadingAndTrailingBytes(ref span, ref data, dataLen, bytesBeforeStream, bytesAfterStream))
                     {
+                        leadingDelimiter = bytesBeforeStream;
+                        trailingDelimiter = bytesAfterStream;
                         success = true;
                         break; //break out of inner for loop
                     }
                 }
                 if(success)
-                    break; //break out of scnd for loop
+                    break; //break out of second for loop
             }
-            if(!success)
-            {
-                System.Console.Error.WriteLine("Warning in Utils.readPDFStreamOrDict(): No proper stream wrapping found. Starting Trouble Shooting.");
-                troubleShootStreamData1(ref span, ref data, dataLen);
-            }
-            return new pdfStream(dict, data);
+            if(success)
+                return new pdfStream(dict, data, leadingDelimiter, trailingDelimiter);
+            
+            System.Console.Error.WriteLine("Warning in Utils.readPDFStreamOrDict(): No spec-complient stream delimiters found. Starting Trouble Shooting with arbitrary White Space delimiters.");
+            troubleShootStreamData1(ref span, ref data, dataLen, ref leadingDelimiter, ref trailingDelimiter);
+            return new pdfStream(dict, data, leadingDelimiter, trailingDelimiter);
         }
 
         static private bool readStreamDataWithGivenLeadingAndTrailingBytes(ref ByteSpan span, ref byte[] data, int dataLen, byte[] bytesBeforeStream, byte[] bytesAfterStream)
         {
             int numBytesBefore = bytesBeforeStream.Length;
             int numBytesAfter = bytesAfterStream.Length;
-            int extraStreamLen = numBytesBefore+dataLen+numBytesAfter;
+            int extraStreamLen = numBytesBefore + dataLen + numBytesAfter;
             if(extraStreamLen > span.Length)
             {
                 return false;
@@ -337,8 +341,8 @@ namespace pdfParserByMH
             {
                 return false;
             }
-            bool beforeStreamValid = (numBytesBefore == 0)? true: span.Slice(0,numBytesBefore).SequenceEqual(bytesBeforeStream);
-            bool afterStreamValid = (numBytesAfter == 0)? true: span.Slice(numBytesBefore+dataLen,numBytesAfter).SequenceEqual(bytesAfterStream);
+            bool beforeStreamValid = (numBytesBefore == 0)? true: span.Slice(0, numBytesBefore).SequenceEqual(bytesBeforeStream);
+            bool afterStreamValid = (numBytesAfter == 0)? true: span.Slice(numBytesBefore + dataLen, numBytesAfter).SequenceEqual(bytesAfterStream);
             if(!(beforeStreamValid && afterStreamValid))
             {
                 return false;
@@ -348,36 +352,27 @@ namespace pdfParserByMH
             return true;
         }
 
-        static private void troubleShootStreamData1(ref ByteSpan span, ref byte[] data, int dataLen)
+        static private void troubleShootStreamData1(ref ByteSpan span, ref byte[] data, int dataLen, ref byte[] leadingDelimiter, ref byte[] trailingDelimiter)
         {
             //check if behind white space + dataLen + white space, the endstream token is present
-            skipASCIIWhiteSpaces(ref span);  
-            ByteSpan span1 = span;
+            leadingDelimiter = skipAndReturnASCIIWhiteSpaces(ref span);      
             if(dataLen > span.Length)
             {
-                System.Console.Error.WriteLine("Warning in Utils.troubleShootStreamData1(): no 'endstream' token found after byte range of size /Length.");
-                System.Console.Error.WriteLine("Trying shorter byte ranges now.");
-                troubleShootStreamData2(ref span, ref data, dataLen);
-                return;
+                throw new System.Exception("Error in Utils.troubleShootStreamData1(): given data /Length goes beyond pdf size!");
             }
-            span1 = span1.Slice(dataLen);
-            skipASCIIWhiteSpaces(ref span1);
-            if(spanStartsWithGivenText(span1,"endstream"))
-            {          
-                data = span.Slice(0,dataLen).ToArray();
-                span = span.Slice(dataLen);
-                skipASCIIWhiteSpaces(ref span);
-                span = span.Slice(9); //move past "endstream" token
-                return;
+            data = span.Slice(0,dataLen).ToArray(); //Already retrieve data, even if not yet clear whether stream is valid
+            span = span.Slice(dataLen);             //Move past data
+            trailingDelimiter = skipAndReturnASCIIWhiteSpaces(ref span);
+            if(!spanStartsWithGivenText(span,"endstream")) //Final check if stream is valid
+            {   
+                throw new System.Exception("Error in Utils.troubleShootStreamData1(): no 'endstream' token found after byte range of size /Length + White Space!");
             }
-            System.Console.Error.WriteLine("Warning in Utils.troubleShootStreamData1(): no 'endstream' token found after byte range of size /Length.");
-            System.Console.Error.WriteLine("Trying shorter byte ranges now.");
-            troubleShootStreamData2(ref span, ref data, dataLen);
+            span = span.Slice(9); //move past "endstream" token
         }
 
         static private void troubleShootStreamData2(ref ByteSpan span, ref byte[] data, int dataLen)
         {
-            //check if within dataLen reach the "endstream" token appears
+            //check if within dataLen reach the "endstream" token appears. Very risky trouble shooting.
             skipASCIIWhiteSpaces(ref span);  
             ByteSpan span1 = span;
             int i = 0;

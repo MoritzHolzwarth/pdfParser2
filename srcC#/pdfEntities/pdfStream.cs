@@ -1,5 +1,7 @@
-﻿using System.CodeDom;
+﻿using System;
+using System.CodeDom;
 using System.Linq;
+using System.Linq.Expressions;
 
 namespace pdfParserByMH
 {
@@ -8,19 +10,23 @@ namespace pdfParserByMH
         //public pdfDictionary dictionary {get;} > C# 5
         public pdfDictionary dictionary {get; private set;}  //Every pdfStream consists of a pdfDictionary, followed by a binary, possible compressed data stream
         public byte[] data {get; private set;}
+        public byte[][] delimiters {get; private set;}
         private System.Collections.Generic.List<string> lstFilters; //The list of Filters that were used (in reverse order than in this list) to compress the data.
                                                                     //To uncompress the data, apply each inverse filter to the data, in the order of this list
         private System.Collections.Generic.List<pdfDictionary> lstDecodeParms; //Some Filters (like /FlateDecode) can depend on extra Parameters, which are given by a pdfdictionary
                                                                                //If one of the used Filters has a parameter-dictionary, then all Filters must have a param-dictionary
                                                                                //In that case, filters which usually dont allow extra paramenters just get an empty dictionary.
         private bool canReadWrite; //Checks if the Filter-Information is sufficient to read from, or write to the stream data (this matters when a pdfStream is extracted not completely at once, but incrementally from a PDF file).
-        public pdfStream(pdfDictionary dictVal, byte[] dataval)
+        public pdfStream(pdfDictionary dictVal, byte[] dataval, byte[] leadingDelimiter = null, byte[] trailingDelimiter = null)
         {
             canReadWrite = false;
             data = dataval;
             dictionary = dictVal;
             lstFilters = new System.Collections.Generic.List<string>();
             lstDecodeParms = new System.Collections.Generic.List<pdfDictionary>();
+            byte[] leadingDelim = (leadingDelimiter == null)? new byte[] {0x0A}: leadingDelimiter;  //default delimiter is Line Feed, i.e. \n
+            byte[] trailingDelim = (trailingDelimiter == null)? new byte[] {0x0A}: trailingDelimiter;
+            delimiters = new byte[][] {leadingDelim, trailingDelim};
         }
 
         public byte[] getUnfilteredData(xrefTable xrefTab = null)

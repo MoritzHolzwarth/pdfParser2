@@ -162,7 +162,7 @@ namespace pdfParserByMH
             string fullCommand = string.Format("\n/HeaderAndFooterByMH BMC\n{0}\n{1}\nEMC\n", headerCommand, footerCommand);
             
             pdfObjectReference headerFooterStreamObRef = document.createNewStreamFromUncompressedData(Utils.stringToBytes(fullCommand));
-            addObRefToContent(headerFooterStreamObRef, false); //'false' meand 'add at end of /Contents'
+            addObRefToContent(headerFooterStreamObRef, false); //'false' means 'add at end of /Contents'
         }
 
         private string getTextBlockStreamCommand(string[] arrText, double xpos, double[] rel_xpos, double ypos, int fontSize, string fontToken, double[] fontColor, bool rotate)
@@ -227,7 +227,7 @@ namespace pdfParserByMH
         //     string fullCommand = string.Format("\n/HeaderAndFooterByMH BMC\n{0}\n{1}\nEMC\n", headerCommand, footerCommand);
             
         //     pdfObjectReference headerFooterStreamObRef = document.createNewStreamFromUncompressedData(Utils.stringToBytes(fullCommand));
-        //     addObRefToContent(headerFooterStreamObRef, false); //'false' meand 'add at end of /Contents'
+        //     addObRefToContent(headerFooterStreamObRef, false); //'false' means 'add at end of /Contents'
         // }
 
         // private string getTextBlockStreamCommand_2(string[] arrText, double xpos, double[] rel_xpos, double ypos, int fontSize, string fontToken, double[] fontColor, bool rotate)

@@ -8,9 +8,7 @@ namespace pdfParserByMH
         static public void skipASCIIWhiteSpaces(ref ByteSpan span)
         {
             if(span.Length == 0)
-            {
                 return;
-            }
 
             int i = 0;
             byte b = span[i];
@@ -20,6 +18,26 @@ namespace pdfParserByMH
                 b = span[i];
             }
             span = span.Slice(i);
+        }
+
+        static public byte[] skipAndReturnASCIIWhiteSpaces(ref ByteSpan span)
+        {
+            System.Collections.Generic.List<byte> lstWhiteSpaces = new System.Collections.Generic.List<byte>();
+            if(span.Length == 0)
+                return lstWhiteSpaces.ToArray();
+            
+            int i = 0;
+            byte b = span[i];
+            while(byteIsASCIIWhitheSpace(b))
+            {
+                lstWhiteSpaces.Add(b);
+                i++;
+                if(i >= span.Length)
+                    break;
+                b = span[i];
+            }
+            span = span.Slice(i);
+            return lstWhiteSpaces.ToArray();
         }
 
         static public void skipPDFComment(ref ByteSpan span)

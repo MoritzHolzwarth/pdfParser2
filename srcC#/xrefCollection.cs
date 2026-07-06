@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 namespace pdfParserByMH
 {
     public class xrefCollection
@@ -50,11 +51,10 @@ namespace pdfParserByMH
                 return ent;
             }
             int key = ((pdfObjectReference)ent).index;
+            int gen = ((pdfObjectReference)ent).generation;
             if(!dict.ContainsKey(key))
             {
-                System.Console.Error.WriteLine("Warning in xrefCollection.getNonRef(): given entity was pdfObjectReference, but it's index was not valid!");
-                System.Console.Error.WriteLine("Returning the same pdfObjectReference!");
-                return ent;
+                throw new Exception(string.Format("Error in xrefCollection.getNonRef(): initial was pdfObjectReference {0} {1} R, but it's index was not valid!", key, gen));
             }
             pdfEntity entity = dict[key];
             int safetyCounter = 0;
@@ -62,11 +62,15 @@ namespace pdfParserByMH
             {
                 safetyCounter++;
                 key = ((pdfObjectReference)entity).index;
+                if(!dict.ContainsKey(key))
+                {
+                    throw new Exception(string.Format("Error in xrefCollection.getNonRef(): intermediate pdfObjectReference {0} {1} R, but it's index was not valid!", key, gen));
+                }
                 entity = dict[key];
             }
             if(safetyCounter > 1000)
             {
-                throw new System.Exception("Error in xreCollection.getNonRef(): while-loop exploeded!");
+                throw new System.Exception("Error in xreCollection.getNonRef(): while-loop exploded!");
             }
             return entity;
         }
@@ -86,7 +90,7 @@ namespace pdfParserByMH
             }
             if(safetyCounter > 1000)
             {
-                throw new System.Exception("Error in xrefTable.getFinalRef(): while-loop exploeded!");
+                throw new System.Exception("Error in xrefTable.getFinalRef(): while-loop exploded!");
             }
             return obRef;
         }

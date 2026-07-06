@@ -47,9 +47,11 @@ namespace pdfParserByMH
         {
             System.Collections.Generic.List<byte> lstBytes = new System.Collections.Generic.List<byte>();
             lstBytes.AddRange(writePDFDictionary(stream.dictionary));
-            lstBytes.AddRange(System.Text.Encoding.ASCII.GetBytes("\nstream\n"));
+            lstBytes.AddRange(System.Text.Encoding.ASCII.GetBytes("\nstream"));
+            lstBytes.AddRange(stream.delimiters[0]);    //For streams taken from the original pdf, these will be the original leading ...
             lstBytes.AddRange(stream.data);
-            lstBytes.AddRange(System.Text.Encoding.ASCII.GetBytes("\nendstream"));
+            lstBytes.AddRange(stream.delimiters[1]);    //.. and trailing Delimiters.
+            lstBytes.AddRange(System.Text.Encoding.ASCII.GetBytes("endstream"));
             return lstBytes.ToArray();
         }
 
