@@ -118,7 +118,7 @@ namespace pdfParserByMH
                 form.Close();
             };
 
-            y += stempelParamsButton.Size.Height;
+            y += stempelParamsButton.Size.Height + 10;
             Button resetParamsButton = new Button();
             AllDokuForm.Controls.Add(resetParamsButton);
             resetParamsButton.Location = new Point(x, y);
