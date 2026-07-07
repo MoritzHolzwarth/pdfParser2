@@ -124,7 +124,7 @@ namespace pdfParserByMH
             {
                 if(kvp.Key == "Abfalldatenblatt")
                 {
-                    kvp.Value.header = string.Format("A. ADB Rev.{0},\r\nDoku-ID: {1}: Rev.{2}", ADBRev_placeholder, dokuID_placeholder, DokuRev_placeholder);  //Note: This text may be written into a Windows.TextBox,
+                    kvp.Value.header = string.Format("A. ADB Rev.{0},\r\nDoku-ID: {1} Rev.{2}", ADBRev_placeholder, dokuID_placeholder, DokuRev_placeholder);  //Note: This text may be written into a Windows.TextBox,
                     kvp.Value.footer = "Das Original ist an dieser Stelle rot gestempelt.";                                                                     //which requires \r\n for line break, not just \n!
                     kvp.Value.headerXPos = PageXPosition.Middle;
                     kvp.Value.footerXPos = PageXPosition.Left;

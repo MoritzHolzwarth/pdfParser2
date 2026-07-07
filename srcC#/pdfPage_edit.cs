@@ -107,12 +107,12 @@ namespace pdfParserByMH
                 {
                     return false; //page is already vertical, no adjustment needed
                 }
-                rotateState.value = (rotateState.value + 90) % 360;
+                rotateState.value = (rotateState.value + 270) % 360;
                 return true; //page vas not vertical. Adjustment applied
             }
             if(rotateStateIsEven)
             {
-                rotateState.value = (rotateState.value + 90) % 360;
+                rotateState.value = (rotateState.value + 270) % 360;
                 return true; //page vas not vertical. Adjustment applied
             }
             return false; //page is already vertical, no adjustment needed

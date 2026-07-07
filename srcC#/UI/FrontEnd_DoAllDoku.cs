@@ -2,6 +2,7 @@ using System;
 using System.Windows.Forms;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Linq;
 
 namespace pdfParserByMH
 {
@@ -88,14 +89,14 @@ namespace pdfParserByMH
             if(subDirectories.Length == 0)
             {
                 MessageBox.Show(string.Format("Uploadordner konnte nicht gefunden werden!\n" +
-                                            "Es scheint, es existiert kein Ordner mit Wildcard-Pfad '{0}'", Path.Combine(dokuFolderPath,uploadFolderApproxName)),
+                                            "Es scheint, im angegebenen Dokuorder existiert kein Uploadordner mit Namen gemäß '{0}'.", uploadFolderApproxName),
                                             "Fehler", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Console.WriteLine(string.Format("Error in prepare_AllDokuStempeln(): could not find Upload-FolderPath '{0}'", Path.Combine(dokuFolderPath,uploadFolderApproxName)));
                 return false;
             }
             if(subDirectories.Length > 1)
             {
-                MessageBox.Show(string.Format("Im Dokuordner wurden mehrere Ordner gefunden, die auf die Form des Uploadordners '{0}' passen!\n" + 
+                MessageBox.Show(string.Format("Im Dokuordner wurden mehrere Ordner gefunden, die auf den Namen des Uploadordners '{0}' passen!\n" + 
                                 "Der Uploadordner muss eindeutig sein!", uploadFolderApproxName),
                                 "Fehler", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Console.WriteLine("Error in FrontEndProgram.run(): Found more than 1 UploadFolder in dokuFolder!");
@@ -103,36 +104,56 @@ namespace pdfParserByMH
             }
             uploadFolderPath = subDirectories[0];
             if(!getDokuID())
-                return false;
+            {
+                if( dictDocs.Values.Any(x => x.selected && (x.header.Contains(dokuID_placeholder) || x.footer.Contains(dokuID_placeholder))) )
+                {
+                    MessageBox.Show("Doku-ID nicht erkannt!\n" + 
+                                "Es wird benötigt, dass die Doku-ID im Ordnernamen eindeutig gemäß dem Schema '{...}_{Zahl und Großbuchstaben}-{Zahl}-{Zahl}_{...}' vorliegt!",
+                                "Fehler", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false;
+                }
+            }
             if(!getDokuRev())
-                return false;
+            {
+                if( dictDocs.Values.Any(x => x.selected && (x.header.Contains(DokuRev_placeholder) || x.footer.Contains(DokuRev_placeholder))) )
+                {
+                    MessageBox.Show("Doku-Reviosionsnummer nicht erkannt!\n" + 
+                                "Es wird benötigt, dass die Doku-Revisionsnummer im Namen des Uploadordners eindeutig gemäß dem Schema '{...}Rev.{Doku-Rev}ENDE' vorliegt!",
+                                "Fehler", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false;
+                }       
+            }
             if(dictDocs["Abfalldatenblatt"].selected)
             {
                 if(!getADBRev())
-                    return false;
+                {
+                    if( dictDocs.Values.Any(x => x.selected && (x.header.Contains(ADBRev_placeholder) || x.footer.Contains(ADBRev_placeholder))) )
+                    {
+                        MessageBox.Show("ADB-Reviosionsnummer nicht erkannt!\n" + 
+                                "Es wird benötigt, dass die ADB-Datei eindeutig ist und die ADB-Revisionsnummer im Dateinamen eindeutig gemäß dem Schema '{...}Rev.{ADB-Rev}ENDE' vorliegt!",
+                                "Fehler", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return false;
+                    }
+                }   
             } 
             return true;
         }
 
         private bool getDokuID()
         {
-            string pattern = "^.*_(?<ID>[^\\\\]+-\\d{4}-\\d+)_[^\\\\]*$";
+            string dokuFolderName = Path.GetFileName(dokuFolderPath);
+            string pattern = "^.*_(?<ID>[A-Z0-9]+-\\d+-\\d+)_.*$";
             System.Text.RegularExpressions.Regex regDokuID = new System.Text.RegularExpressions.Regex(pattern);
-            var matches = regDokuID.Matches(dokuFolderPath);
+            var matches = regDokuID.Matches(dokuFolderName);
             if(matches.Count == 0)
             {
-                MessageBox.Show("Keine Doku-ID konnte aus dem Namen des DokuOrdenrs abgeleitet werden!\n" + 
-                                "Es wird erwartet, dass die Doku-ID im Ordnernamen gemäß dem Schema '{...}_{Doku-ID}-{Zahl}-{Zahl}_{...}' vorliegt!",
-                                "Fehler", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                dokuID = null;
                 Console.WriteLine("Error in FrontEndProgram.getDokuID(): No dokuID-match found in dokuFolderPath!");
                 return false;
             }
             if(matches.Count > 1)
             {
-                MessageBox.Show("Die Doku-ID konnte nicht eindeutig aus dem Namen des DokuOrdenrs abgeleitet werden!\n" + 
-                                "Es wurden mehrere mögliche Doku-IDs gefunden!\n" +
-                                "Es wird erwartet, dass die Doku-ID im Ordnernamen eindeutig gemäß dem Schema '{...}_{Doku-ID}-{Zahl}-{Zahl}_{...}ENDE' vorliegt!",
-                                "Fehler", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                dokuID = null;
                 Console.WriteLine("Error in FrontEndProgram.getDokuID(): More than 1 dokuID-matches found in dokuFolderPath!");
                 return false;
             }
@@ -147,18 +168,13 @@ namespace pdfParserByMH
             var matches = regDokuID.Matches(uploadFolderPath);
             if(matches.Count == 0)
             {
-                MessageBox.Show("Keine Doku-Reviosionsnummer konnte aus dem Namen des Uploadordners abgeleitet werden!\n" + 
-                                "Es wird erwartet, dass die Doku-Revisionsnummer im Ordnernamen gemäß dem Schema '{...}Rev.{Doku-Rev}ENDE' vorliegt!",
-                                "Fehler", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                dokuRev = null;
                 Console.WriteLine("Error in FrontEndProgram.getDokuRev(): No dokuRev-match found in uploadFolderPath!");
                 return false;
             }
             if(matches.Count > 1)
             {
-                MessageBox.Show("Die Doku-Revisionsnummer konnte nicht eindeutig aus dem Namen des Uploadordners abgeleitet werden!\n" + 
-                                "Es wurden mehrere mögliche Doku-Revisionsnummern gefunden!\n" +
-                                "Es wird erwartet, dass die Doku-Rev im Ordnernamen eindeutig gemäß dem Schema '{...}Rev.{Doku-Rev}ENDE' vorliegt!",
-                                "Fehler", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                dokuRev = null;
                 Console.WriteLine("Error in FrontEndProgram.getDokuRev(): More than 1 dokuRev-matches found in uploadFolderPath!");
                 return false;
             }
@@ -172,10 +188,7 @@ namespace pdfParserByMH
             string[] ADBFilePaths = Directory.GetFiles(Path.Combine(uploadFolderPath, docData.folderName), docData.fileApproxName, SearchOption.TopDirectoryOnly);
             if(ADBFilePaths.Length != 1)
             {
-                MessageBox.Show(string.Format("Die ADB-pdf-Datei konnte nicht eindeutig gefunden werden!\n" + 
-                                "Es wurden mehrere Dateien gemäß dem Schema {0} gefunden!\n" + 
-                                "Die ADB-Datei muss eindeutig sein, um die ADB-Revisionsnummer abzuleiten!", Path.Combine(docData.folderName, docData.fileApproxName)),
-                                "Fehler", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ADBRev = null;
                 Console.WriteLine("Error in getABDRev(): More than 1 ADB-Files found!");
                 return false;
             }
@@ -185,18 +198,13 @@ namespace pdfParserByMH
             var matches = regRev.Matches(ADBFileName);
             if(matches.Count == 0)
             {
-                MessageBox.Show("Keine ADB-Reviosionsnummer konnte aus dem Namen der ADB-Datei abgeleitet werden!\n" + 
-                                "Es wird erwartet, dass die ADB-Revisionsnummer im Dateinamen gemäß dem Schema '{...}Rev.{ADB-Rev}ENDE' vorliegt!",
-                                "Fehler", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ADBRev = null;
                 Console.WriteLine("Error in FrontEndProgram.getADBRev(): No ADBRev-match found in file name!");
                 return false;
             }
             if(matches.Count > 1)
             {
-                MessageBox.Show("Die ADB-Revisionsnummer konnte nicht eindeutig aus dem Namen der ADB-Datei abgeleitet werden!\n" + 
-                                "Es wurden mehrere mögliche ADB-Revisionsnummern gefunden!\n" +
-                                "Es wird erwartet, dass die ADB-Rev im Dateinamen eindeutig gemäß dem Schema '{...}Rev.{ADB-Rev}ENDE' vorliegt!",
-                                "Fehler", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ADBRev = null;
                 Console.WriteLine("Error in FrontEndProgram.getADBRev(): More than 1 ADBRev-matches found in file name!");
                 return false;
             }
