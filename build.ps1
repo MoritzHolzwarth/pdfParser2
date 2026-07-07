@@ -32,7 +32,7 @@ $fontFiles = (Get-ChildItem -Path $fontDir -Recurse -Filter "*.json") | Select-O
 
 $outPath = Join-Path "$PSScriptRoot\bin\Debug\net472" "pdfParser2.exe"
 
-$cscargs = @("/target:exe", "/platform:anycpu", "/optimize+", "/langversion:5", "/out:`"$outPath`"") +
+$cscargs = @("/target:winexe", "/platform:anycpu", "/optimize+", "/langversion:5", "/out:`"$outPath`"") +
         ($fontFiles | ForEach-Object {"/resource:`"$_`",Font.$($_.Substring($fontDir.Length+1))"}) +
         ("/reference:`"$webextension`"") + #This is needed for the JavascriptSerialozer used to easily read/write to .json filed
         ($sourceFiles | ForEach-Object {"`"$_`""})
