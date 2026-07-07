@@ -118,7 +118,20 @@ namespace pdfParserByMH
                 form.Close();
             };
 
-            y += stempelButton.Size.Height;
+            y += stempelParamsButton.Size.Height;
+            Button resetParamsButton = new Button();
+            AllDokuForm.Controls.Add(resetParamsButton);
+            resetParamsButton.Location = new Point(x, y);
+            resetParamsButton.Size = new Size(100, 50);
+            resetParamsButton.BackColor = System.Drawing.ColorTranslator.FromHtml("#C2EAF0");
+            resetParamsButton.Text = "Reset Alle Parameter";
+            resetParamsButton.Click += (sender, e) =>
+            {
+                fillDictDocsFromDefault();
+                saveData(true);
+            };
+            y += resetParamsButton.Size.Height;
+            
             return y;
         }
 
