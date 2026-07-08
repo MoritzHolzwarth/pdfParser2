@@ -105,7 +105,7 @@ namespace pdfParserByMH
             uploadFolderPath = subDirectories[0];
             if(!getDokuID())
             {
-                if( dictDocs.Values.Any(x => x.selected && (x.header.Contains(dokuID_placeholder) || x.footer.Contains(dokuID_placeholder))) )
+                if( dictDocs.Values.Any(x => x.selected && (x.header.Contains(dokuID_placeholder) || x.footer.Contains(dokuID_placeholder))) )  //If any document that is supposed to stempel has Doku-ID in its header or footer
                 {
                     MessageBox.Show("Doku-ID nicht erkannt!\n" + 
                                 "Es wird benötigt, dass die Doku-ID im Ordnernamen eindeutig gemäß dem Schema '{...}_{Zahl und Großbuchstaben}-{Zahl}-{Zahl}_{...}' vorliegt!",
@@ -115,7 +115,7 @@ namespace pdfParserByMH
             }
             if(!getDokuRev())
             {
-                if( dictDocs.Values.Any(x => x.selected && (x.header.Contains(DokuRev_placeholder) || x.footer.Contains(DokuRev_placeholder))) )
+                if( dictDocs.Values.Any(x => x.selected && (x.header.Contains(DokuRev_placeholder) || x.footer.Contains(DokuRev_placeholder))) )    //If any document that is supposed to stempel has Doku-Rev in its header or footer
                 {
                     MessageBox.Show("Doku-Reviosionsnummer nicht erkannt!\n" + 
                                 "Es wird benötigt, dass die Doku-Revisionsnummer im Namen des Uploadordners eindeutig gemäß dem Schema '{...}Rev.{Doku-Rev}ENDE' vorliegt!",
@@ -127,7 +127,7 @@ namespace pdfParserByMH
             {
                 if(!getADBRev())
                 {
-                    if( dictDocs.Values.Any(x => x.selected && (x.header.Contains(ADBRev_placeholder) || x.footer.Contains(ADBRev_placeholder))) )
+                    if( dictDocs.Values.Any(x => x.selected && (x.header.Contains(ADBRev_placeholder) || x.footer.Contains(ADBRev_placeholder))) )  //If any document that is supposed to stempel has ADB-Rev in its header or footer
                     {
                         MessageBox.Show("ADB-Reviosionsnummer nicht erkannt!\n" + 
                                 "Es wird benötigt, dass die ADB-Datei eindeutig ist und die ADB-Revisionsnummer im Dateinamen eindeutig gemäß dem Schema '{...}Rev.{ADB-Rev}ENDE' vorliegt!",

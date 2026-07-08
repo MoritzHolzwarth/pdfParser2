@@ -66,6 +66,12 @@ namespace pdfParserByMH
             }
         }
 
+        private void delete_old_saveFolder()
+        {
+            if(Directory.Exists(savedContentsFolderPath))
+                Directory.Delete(savedContentsFolderPath, true); //Delete Folder with all contents
+        }
+
         private string getSaveTextFromDocPropertyValue(DocPropertyType proptype, object val)
         {
             if(DocStringProperty.allSubTypes.Contains(proptype))

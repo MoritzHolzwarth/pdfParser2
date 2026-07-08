@@ -104,21 +104,23 @@ namespace pdfParserByMH
                     cb.Checked = false;
             };
 
-            x += stempelButton.Size.Width + 200;
-            Button stempelParamsButton = new Button();
-            AllDokuForm.Controls.Add(stempelParamsButton);
-            stempelParamsButton.Location = new Point(x, y);
-            stempelParamsButton.Size = new Size(100, 50);
-            stempelParamsButton.BackColor = System.Drawing.ColorTranslator.FromHtml("#C2EAF0");
-            stempelParamsButton.Text = "Parameter Anpassen";
-            stempelParamsButton.Click += (sender, e) =>
-            {
-                progState = ProgramState.AdjustDokuParams;
-                form.DialogResult = DialogResult.OK;
-                form.Close();
-            };
+            y += selectNoneButton.Size.Height;
 
-            y += stempelButton.Size.Height;
+            // x += stempelButton.Size.Width + 200;
+            // Button stempelParamsButton = new Button();
+            // AllDokuForm.Controls.Add(stempelParamsButton);
+            // stempelParamsButton.Location = new Point(x, y);
+            // stempelParamsButton.Size = new Size(100, 50);
+            // stempelParamsButton.BackColor = System.Drawing.ColorTranslator.FromHtml("#C2EAF0");
+            // stempelParamsButton.Text = "Parameter Anpassen";
+            // stempelParamsButton.Click += (sender, e) =>
+            // {
+            //     progState = ProgramState.AdjustDokuParams;
+            //     form.DialogResult = DialogResult.OK;
+            //     form.Close();
+            // };
+
+            // y += stempelButton.Size.Height;
             return y;
         }
 

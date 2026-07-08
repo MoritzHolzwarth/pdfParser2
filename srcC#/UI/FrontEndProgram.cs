@@ -62,13 +62,14 @@ namespace pdfParserByMH
             tabControl.Size = new Size(800,1000);
             
             makeDictDocs();
-            loadData();
+            delete_old_saveFolder();
+            //loadData();
 
             makeAllDokuForm();
 
             makeSingelPDFForm();  
 
-            makeDokuParamsForm();     
+            //makeDokuParamsForm();     
         }
 
         public void run()
@@ -93,7 +94,7 @@ namespace pdfParserByMH
                 progState = ProgramState.Null; //reset Program State after execution, to be set again by next Form Dialog.
                 result = form.ShowDialog();
             }
-            saveData();
+            //saveData();
         }
 
     }
