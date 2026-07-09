@@ -22,7 +22,7 @@ namespace pdfParserByMH
             return realNum;
         }
 
-        static public pdfName readPDFName(ref ByteSpan span)
+        static public pdfName readPDFName(ref ByteSpan span, bool skipTrailingWhiteSpaces = true)
         {
             skipPDFComment(ref span);
             if(!(span[0] == '/'))
@@ -30,14 +30,15 @@ namespace pdfParserByMH
             byte[] forbiddenChars = {(byte)'/', (byte)'\\', (byte)'(', (byte)')', (byte)'[', (byte)']', (byte)'{', (byte)'}', (byte)'<', (byte)'>', (byte)'%'};
             int i = 1;
             byte b = span[i];
-            while( System.Array.IndexOf(forbiddenChars, b) < 0 && !byteIsASCIIWhitheSpace(b) && i < span.Length && i < span.Length-1)
+            while( System.Array.IndexOf(forbiddenChars, b) < 0 && !byteIsASCIIWhitheSpace(b) && i < span.Length-1)
             {
                 i++;
                 b = span[i];
             }
             pdfName name = new pdfName(Utils.bytesToString(span.Slice(0,i)));
             span = span.Slice(i);
-            skipASCIIWhiteSpaces(ref span);
+            if(skipTrailingWhiteSpaces)
+                skipASCIIWhiteSpaces(ref span);
             return name;
         }
 
@@ -144,11 +145,30 @@ namespace pdfParserByMH
             //using Latin1 Encoding, because the span may be much longer than the pdfString and contain non-ASCII bytes
             string spanString = System.Text.Encoding.GetEncoding("iso-8859-1").GetString(span.ToArray()); 
             //The regex checks after the pdfString (after its closing ')'), if there comes another ')' without a '(' or 'endobj' or 'stream' before it.
+            //(if there comes an 'endobj' before the next ')', that is fine because it means that this misterious next ')' does (most likely) not belong to the current object and cannto hurt our string's integrity.
+            //Similarly, if there comes a 'stream' before the next ')', that is fine because it means that this misterious next ')' does (most likely) belong to a stream-data and cannot hurt our string's integrity.)
             //This can only be the case if the pdfString's assumed closing ')' was not actually a closing token but part of the pdfString's content.
             //Hence it would mean that the pdfString was not correctly parsed.
             System.Text.RegularExpressions.Regex reg = new System.Text.RegularExpressions.Regex(@"^((?!(endobj|stream|\())[\s\S])*\)",System.Text.RegularExpressions.RegexOptions.Compiled);
             return !reg.IsMatch(spanString);
         }
+
+        // static public bool checkBehindPDFString2(ByteSpan span)
+        // {
+        //     if(span.Length == 0)
+        //     {
+        //         return true;
+        //     }
+        //     //using Latin1 Encoding, because the span may be much longer than the pdfString and contain non-ASCII bytes
+        //     string spanString = System.Text.Encoding.GetEncoding("iso-8859-1").GetString(span.ToArray()); 
+        //     //The regex checks after the pdfString (after its closing ')'), if there comes another ')' without a '(' or 'endobj' or 'stream' before it.
+        //     //(if there comes an 'endobj' before the next ')', that is fine because it means that this misterious next ')' does (most likely) not belong to the current object and cannto hurt our string's integrity.
+        //     //Similarly, if there comes a 'stream' before the next ')', that is fine because it means that this misterious next ')' does (most likely) belong to a stream-data and cannot hurt our string's integrity.)
+        //     //This can only be the case if the pdfString's assumed closing ')' was not actually a closing token but part of the pdfString's content.
+        //     //Hence it would mean that the pdfString was not correctly parsed.
+        //     System.Text.RegularExpressions.Regex reg = new System.Text.RegularExpressions.Regex(@"^((?!(endobj|stream|\())[\s\S])*\)",System.Text.RegularExpressions.RegexOptions.Compiled);
+        //     return !reg.IsMatch(spanString);
+        // }
 
         static public pdfHexString readPDFHexString(ref ByteSpan span)
         {

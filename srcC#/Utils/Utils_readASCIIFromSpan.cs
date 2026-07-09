@@ -20,6 +20,22 @@ namespace pdfParserByMH
             span = span.Slice(i);
         }
 
+        static public int skipAndCountASCIIWhiteSpaces(ref ByteSpan span)
+        {
+            if(span.Length == 0)
+                return 0;
+
+            int i = 0;
+            byte b = span[i];
+            while (byteIsASCIIWhitheSpace(b) && i < span.Length-1)
+            {
+                i++;
+                b = span[i];
+            }
+            span = span.Slice(i);
+            return i;
+        }
+
         static public byte[] skipAndReturnASCIIWhiteSpaces(ref ByteSpan span)
         {
             System.Collections.Generic.List<byte> lstWhiteSpaces = new System.Collections.Generic.List<byte>();
@@ -52,7 +68,7 @@ namespace pdfParserByMH
             }
             int i=1;
             byte b = span[i];
-            while(b != 0x0A && b != 0x0D && i < span.Length-1)
+            while(b != 0x0A && b != 0x0D && i < span.Length-1)  //break loop on new line. The whole current line is a pdf comment
             {
                 i++;
                 b = span[i];
@@ -63,6 +79,12 @@ namespace pdfParserByMH
             {
                 skipPDFComment(ref span);
             }
+        }
+
+        static public void skipASCIIWhiteSpacesAndPDFComments(ref ByteSpan span)
+        {
+            skipASCIIWhiteSpaces(ref span);
+            skipPDFComment(ref span);
         }
 
         static public int readASCIIInteger(ref ByteSpan span, bool skipTrailingWhiteSpaces = true)
