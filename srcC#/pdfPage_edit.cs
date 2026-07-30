@@ -289,7 +289,7 @@ namespace pdfParserByMH
                             dy = 0.5*(mediaBox[2] + mediaBox[3]);
                             break;
                         case PageXPosition.Right:
-                            dy = mediaBox[2] + mediaBox[3];
+                            dy = mediaBox[2];
                             break;
                     }
                     cmCommand = string.Format("0 -1 1 0 {0} {1} cm", dx, dy);
@@ -409,7 +409,7 @@ namespace pdfParserByMH
                             dy = 0.5*(mediaBox[2] + mediaBox[3]);
                             break;
                         case PageXPosition.Right:
-                            dy = mediaBox[2] + mediaBox[3];
+                            dy = mediaBox[2];
                             break;
                     }
                     cmCommand = string.Format("0 -1 1 0 {0} {1} cm", dx, dy);
