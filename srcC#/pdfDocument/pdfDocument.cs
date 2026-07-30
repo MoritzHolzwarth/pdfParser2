@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using System.Dynamic;
+using System;
 
 namespace pdfParserByMH
 {
@@ -43,6 +44,22 @@ namespace pdfParserByMH
         {
             outputPath = path;
             return true;
+        }
+
+        public void printData()
+        {
+            if(pagesDict == null)
+                return;
+            
+            foreach(pdfPage page in pagesDict.Values)
+            {
+                Console.WriteLine(string.Format("Page Nr {0}\nMedia Box:", page.number.ToString()));
+                double[] mediaBox = page.mediaBox;
+                Console.WriteLine(string.Format("x0 {0}; y0 {1}; w {2}; h {3}", mediaBox[0].ToString(), mediaBox[1].ToString(), mediaBox[2].ToString(), mediaBox[3].ToString()));
+                Console.WriteLine("Rotation State:");
+                Console.WriteLine(string.Format("{0}", page.rotateState.value.ToString()));
+            }
+            
         }
 
         private void createPagesDict()

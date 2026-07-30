@@ -38,6 +38,8 @@ namespace pdfParserByMH
                 doc.stempeln(docdata.header, docdata.footer, docdata.headerXPos, docdata.footerXPos, "/Helvetica", 12, docdata.textColor, docdata.scaleFactor, 
                             docdata.vertPagesQuantifier, docdata.horiPagesQuantifier, docdata.vertPagesNumbers, docdata.horiPagesNumbers);
                 doc.write();
+
+                doc.printData();
             }
             catch(Exception exc)
             {

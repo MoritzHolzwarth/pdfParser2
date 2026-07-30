@@ -1,5 +1,7 @@
 using System;
 using System.CodeDom;
+using System.Collections;
+using System.Data.Common;
 using System.Diagnostics.Eventing.Reader;
 using System.Drawing;
 using System.Linq;
@@ -146,8 +148,9 @@ namespace pdfParserByMH
         public void addHeaderAndFooter(string headerText, string footerText, PageXPosition headerX, PageXPosition footerX, string fontToken, string fontName, int fontSize, double[] fontColor, 
                                         bool makeVertical =false, bool makeHorizontal =false, int xDistance = 20, int yDistance = 20)
         {
-            enforcePageOriantation(makeVertical, makeHorizontal);   //This is only a sigle flag for the renderer. Does nothing to any stream or mediaBox.
+        //If the page is by default Horizontal but is rendered vertical due to a 90° or 270° Rotate State, the header/footer text must be flipped
             bool defaultIsHorizontal = mediaBox[2] > mediaBox[3];   //This flag is used below to ensure the header and footer are always placed on the page vertically, regardless of the pages rendering.
+            enforcePageOriantation(makeVertical, makeHorizontal);   //This is only a sigle flag for the renderer. Does nothing to any stream or mediaBox.
             ValueTuple<string[], double[]> formatHeaderResult = formatStringForPDFStream(headerText, fontName, fontSize);
             ValueTuple<string[], double[]> formatFooterResult = formatStringForPDFStream(footerText, fontName, fontSize);
             string[] arrHeaderText = formatHeaderResult.Item1;
@@ -167,6 +170,273 @@ namespace pdfParserByMH
             
             pdfObjectReference headerFooterStreamObRef = document.createNewStreamFromUncompressedData(Utils.stringToBytes(fullCommand));
             addObRefToContent(headerFooterStreamObRef, false); //'false' means 'add at end of /Contents'
+        }
+
+        public void addHeaderAndFooter_test(string headerText, string footerText, PageXPosition headerX, PageXPosition footerX, string fontToken, string fontName, int fontSize, double[] fontColor, 
+                                        bool makeVertical =false, bool makeHorizontal =false, int xDistance = 20, int yDistance = 20)
+        {
+        //If the page is by default Horizontal but is rendered vertical due to a 90° or 270° Rotate State, the header/footer text must be flipped
+            bool defaultIsHorizontal = mediaBox[2] > mediaBox[3];   //This flag is used below to ensure the header and footer are always placed on the page vertically, regardless of the pages rendering.
+            enforcePageOriantation(makeVertical, makeHorizontal);   //This is only a sigle flag for the renderer. Does nothing to any stream or mediaBox.
+            ValueTuple<string[], double[]> formatHeaderResult = formatStringForPDFStream(headerText, fontName, fontSize);
+            ValueTuple<string[], double[]> formatFooterResult = formatStringForPDFStream(footerText, fontName, fontSize);
+            string[] arrHeaderText = formatHeaderResult.Item1;
+            double[] arrHeaderTextWidths = formatHeaderResult.Item2;
+            string[] arrFooterText = formatFooterResult.Item1;
+            double[] arrFooterTextWidths = formatFooterResult.Item2;
+            double headerXPos = getTextLineXPosValue(headerX, mediaBox, arrHeaderTextWidths[0], xDistance, false);
+            double footerXPos = getTextLineXPosValue(footerX, mediaBox, arrFooterTextWidths[0], xDistance, false);
+            double headerYPos = mediaBox[1] + mediaBox[3] - yDistance + (false? mediaBox[2] - mediaBox[3]: 0);
+            double footerYPos = mediaBox[1] + yDistance;
+            double[] header_relXPos = getTextLinesRelativeXPosValues(headerX, arrHeaderTextWidths, arrHeaderTextWidths[0]);
+            double[] footer_relXPos = getTextLinesRelativeXPosValues(footerX, arrFooterTextWidths, arrFooterTextWidths[0]);
+            
+            string headerCommand = getTextBlockStreamCommand_testHeader(arrHeaderText, headerX, headerXPos, header_relXPos, headerYPos, fontSize, fontToken, fontColor, defaultIsHorizontal);
+            string footerCommand = getTextBlockStreamCommand_testFooter(arrFooterText, footerX, footerXPos, footer_relXPos, footerYPos, fontSize, fontToken, fontColor, defaultIsHorizontal);
+            string fullCommand = string.Format("\n/HeaderAndFooterByMH BMC\n{0}\n{1}\nEMC\n", headerCommand, footerCommand);
+            
+            pdfObjectReference headerFooterStreamObRef = document.createNewStreamFromUncompressedData(Utils.stringToBytes(fullCommand));
+            addObRefToContent(headerFooterStreamObRef, false); //'false' means 'add at end of /Contents'
+        }
+
+        private string getTextBlockStreamCommand_testHeader(string[] arrText, PageXPosition xType, double xpos, double[] rel_xpos, double ypos, int fontSize, string fontToken, double[] fontColor, bool defaultIsHorizontal)
+        {
+            int lineHeight = -Convert.ToInt32(fontSize*1.2);
+            string cmCommand = null;
+
+            if(rotateState.value == 0)
+            {
+                if(defaultIsHorizontal)
+                {
+                    double dx = mediaBox[2] - mediaBox[3];
+                    double dy = 0;
+                    switch (xType)
+                    {
+                        case PageXPosition.Left:
+                            dy = mediaBox[3];
+                            break;
+                        case PageXPosition.Middle:
+                            dy = 0.5*(mediaBox[2] + mediaBox[3]);
+                            break;
+                        case PageXPosition.Right:
+                            dy = mediaBox[2];
+                            break;
+                    }
+                    cmCommand = string.Format("0 -1 1 0 {0} {1} cm", dx, dy);
+                }
+                else
+                    cmCommand = "";
+            }
+            else if(rotateState.value == 90)
+            {
+                if(defaultIsHorizontal)
+                {
+                    double dx = mediaBox[3];
+                    double dy = 0;
+                    switch (xType)
+                    {
+                        case PageXPosition.Left:
+                            dy = 0;
+                            break;
+                        case PageXPosition.Middle:
+                            dy = -0.5*(mediaBox[2] - mediaBox[3]);
+                            break;
+                        case PageXPosition.Right:
+                            dy = -(mediaBox[2] - mediaBox[3]);
+                            break;
+                    }
+                    cmCommand = string.Format("0 1 -1 0 {0} {1} cm", dx, dy);
+                }
+                else
+                    cmCommand = "";
+            }
+            else if(rotateState.value == 180)
+            {
+
+                if(defaultIsHorizontal)
+                {
+                    double dx = mediaBox[3];
+                    double dy = 0;
+                    switch (xType)
+                    {
+                        case PageXPosition.Left:
+                            dy = 0;
+                            break;
+                        case PageXPosition.Middle:
+                            dy = -0.5*(mediaBox[2] - mediaBox[3]);
+                            break;
+                        case PageXPosition.Right:
+                            dy = -(mediaBox[2] - mediaBox[3]);
+                            break;
+                    }
+                    cmCommand = string.Format("0 1 -1 0 {0} {1} cm", dx, dy);
+                }
+                else
+                    cmCommand = string.Format("-1 0 0 -1 {0} {1} cm", -mediaBox[2], mediaBox[3]);
+            }
+            else if(rotateState.value == 270)
+            {
+                if(defaultIsHorizontal)
+                {
+                    double dx = mediaBox[2] - mediaBox[3];
+                    double dy = 0;
+                    switch (xType)
+                    {
+                        case PageXPosition.Left:
+                            dy = mediaBox[3];
+                            break;
+                        case PageXPosition.Middle:
+                            dy = 0.5*(mediaBox[2] + mediaBox[3]);
+                            break;
+                        case PageXPosition.Right:
+                            dy = mediaBox[2] + mediaBox[3];
+                            break;
+                    }
+                    cmCommand = string.Format("0 -1 1 0 {0} {1} cm", dx, dy);
+                }
+                else
+                    cmCommand = string.Format("-1 0 0 -1 {0} {1} cm", -mediaBox[2], mediaBox[3]);
+            }
+            else
+                throw new Exception(string.Format("Invalid rotateState! {}", rotateState.value));
+
+            string rgCommand = string.Format("{0} {1} {2} rg", fontColor[0], fontColor[1], fontColor[2]);
+            string tfCommand = string.Format("{0} {1} Tf", fontToken, fontSize);
+            string tlCommand = string.Format("{0} TL", lineHeight); 
+            System.Text.StringBuilder strBuild = new System.Text.StringBuilder();
+            strBuild.Append(string.Format("{0} {1} Td", xpos + rel_xpos[0], ypos));
+            strBuild.Append(string.Format("\n{0} Tj", arrText[0]));
+            if(arrText.Length > 1)
+            {
+                for(int i=1; i<arrText.Length; i++)
+                {
+                    strBuild.Append(string.Format("\n{0} {1} Td", rel_xpos[i], lineHeight));
+                    strBuild.Append(string.Format("\n{0} Tj", arrText[i]));
+                }
+            }
+            string tdtjCommand = strBuild.ToString();
+            string fullCommand = string.Format("q\n{0}\n BT \n{1}\n{2}\n{3}\n{4}\n ET \nQ", cmCommand, rgCommand, tfCommand, tlCommand, tdtjCommand);
+            return fullCommand;
+        }
+
+        private string getTextBlockStreamCommand_testFooter(string[] arrText, PageXPosition xType, double xpos, double[] rel_xpos, double ypos, int fontSize, string fontToken, double[] fontColor, bool defaultIsHorizontal)
+        {
+            int lineHeight = -Convert.ToInt32(fontSize*1.2);
+            string cmCommand = null;
+
+            if(rotateState.value == 0)
+            {
+                if(defaultIsHorizontal)
+                {
+                    double dx = 0;
+                    double dy = 0;
+                    switch (xType)
+                    {
+                        case PageXPosition.Left:
+                            dy = mediaBox[3];
+                            break;
+                        case PageXPosition.Middle:
+                            dy = 0.5*(mediaBox[2] + mediaBox[3]);
+                            break;
+                        case PageXPosition.Right:
+                            dy = mediaBox[2];
+                            break;
+                    }
+                    cmCommand = string.Format("0 -1 1 0 {0} {1} cm", dx, dy);
+                }
+                else
+                    cmCommand = "";
+            }
+            else if(rotateState.value == 90)
+            {
+                if(defaultIsHorizontal)
+                {
+                    double dx = mediaBox[2];
+                    double dy = 0;
+                    switch (xType)
+                    {
+                        case PageXPosition.Left:
+                            dy = 0;
+                            break;
+                        case PageXPosition.Middle:
+                            dy = -0.5*(mediaBox[2] - mediaBox[3]);
+                            break;
+                        case PageXPosition.Right:
+                            dy = -(mediaBox[2] - mediaBox[3]);
+                            break;
+                    }
+                    cmCommand = string.Format("0 1 -1 0 {0} {1} cm", dx, dy);
+                }
+                else
+                    cmCommand = "";
+            }
+            else if(rotateState.value == 180)
+            {
+
+                if(defaultIsHorizontal)
+                {
+                    double dx = mediaBox[2];
+                    double dy = 0;
+                    switch (xType)
+                    {
+                        case PageXPosition.Left:
+                            dy = 0;
+                            break;
+                        case PageXPosition.Middle:
+                            dy = -0.5*(mediaBox[2] - mediaBox[3]);
+                            break;
+                        case PageXPosition.Right:
+                            dy = -(mediaBox[2] - mediaBox[3]);
+                            break;
+                    }
+                    cmCommand = string.Format("0 1 -1 0 {0} {1} cm", dx, dy);
+                }
+                else
+                    cmCommand = string.Format("-1 0 0 -1 {0} {1} cm", -mediaBox[2], 0);
+            }
+            else if(rotateState.value == 270)
+            {
+                if(defaultIsHorizontal)
+                {
+                    double dx = 0;
+                    double dy = 0;
+                    switch (xType)
+                    {
+                        case PageXPosition.Left:
+                            dy = mediaBox[3];
+                            break;
+                        case PageXPosition.Middle:
+                            dy = 0.5*(mediaBox[2] + mediaBox[3]);
+                            break;
+                        case PageXPosition.Right:
+                            dy = mediaBox[2] + mediaBox[3];
+                            break;
+                    }
+                    cmCommand = string.Format("0 -1 1 0 {0} {1} cm", dx, dy);
+                }
+                else
+                    cmCommand = string.Format("-1 0 0 -1 {0} {1} cm", -mediaBox[2], 0);
+            }
+            else
+                throw new Exception(string.Format("Invalid rotateState! {}", rotateState.value));
+
+            string rgCommand = string.Format("{0} {1} {2} rg", fontColor[0], fontColor[1], fontColor[2]);
+            string tfCommand = string.Format("{0} {1} Tf", fontToken, fontSize);
+            string tlCommand = string.Format("{0} TL", lineHeight); 
+            System.Text.StringBuilder strBuild = new System.Text.StringBuilder();
+            strBuild.Append(string.Format("{0} {1} Td", xpos + rel_xpos[0], ypos));
+            strBuild.Append(string.Format("\n{0} Tj", arrText[0]));
+            if(arrText.Length > 1)
+            {
+                for(int i=1; i<arrText.Length; i++)
+                {
+                    strBuild.Append(string.Format("\n{0} {1} Td", rel_xpos[i], lineHeight));
+                    strBuild.Append(string.Format("\n{0} Tj", arrText[i]));
+                }
+            }
+            string tdtjCommand = strBuild.ToString();
+            string fullCommand = string.Format("q\n{0}\n BT \n{1}\n{2}\n{3}\n{4}\n ET \nQ", cmCommand, rgCommand, tfCommand, tlCommand, tdtjCommand);
+            return fullCommand;
         }
 
         private string getTextBlockStreamCommand(string[] arrText, double xpos, double[] rel_xpos, double ypos, int fontSize, string fontToken, double[] fontColor, bool rotate)

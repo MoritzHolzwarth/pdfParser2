@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\morit\\Desktop\\C#\\pdfParser2\\pdfParser2.csproj": {}
+    "C:\\Users\\Moritz.Holzwarth\\OneDrive - Safetec GmbH\\Dokumente\\KTE\\pdfParser2-Csharp5\\pdfParser2.csproj": {}
   },
   "projects": {
-    "C:\\Users\\morit\\Desktop\\C#\\pdfParser2\\pdfParser2.csproj": {
+    "C:\\Users\\Moritz.Holzwarth\\OneDrive - Safetec GmbH\\Dokumente\\KTE\\pdfParser2-Csharp5\\pdfParser2.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\morit\\Desktop\\C#\\pdfParser2\\pdfParser2.csproj",
+        "projectUniqueName": "C:\\Users\\Moritz.Holzwarth\\OneDrive - Safetec GmbH\\Dokumente\\KTE\\pdfParser2-Csharp5\\pdfParser2.csproj",
         "projectName": "pdfParser2",
-        "projectPath": "C:\\Users\\morit\\Desktop\\C#\\pdfParser2\\pdfParser2.csproj",
-        "packagesPath": "C:\\Users\\morit\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\morit\\Desktop\\C#\\pdfParser2\\obj\\",
+        "projectPath": "C:\\Users\\Moritz.Holzwarth\\OneDrive - Safetec GmbH\\Dokumente\\KTE\\pdfParser2-Csharp5\\pdfParser2.csproj",
+        "packagesPath": "C:\\Users\\Moritz.Holzwarth\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Moritz.Holzwarth\\OneDrive - Safetec GmbH\\Dokumente\\KTE\\pdfParser2-Csharp5\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\morit\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\Moritz.Holzwarth\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net472"
@@ -24,6 +24,7 @@
         },
         "frameworks": {
           "net472": {
+            "framework": "net472",
             "targetAlias": "net472",
             "projectReferences": {}
           }
@@ -38,10 +39,11 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.100"
+        "SdkAnalysisLevel": "10.0.300"
       },
       "frameworks": {
         "net472": {
+          "framework": "net472",
           "targetAlias": "net472",
           "dependencies": {
             "Microsoft.NETFramework.ReferenceAssemblies": {
@@ -51,7 +53,7 @@
               "autoReferenced": true
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.100\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.302\\RuntimeIdentifierGraph.json"
         }
       },
       "runtimes": {

@@ -145,7 +145,7 @@ namespace pdfParserByMH
                     default:
                         break;
                 }
-                page.addHeaderAndFooter(headerText, footerText, headerX, footerX, fontToken, fontName, fontSize, fontColor, makeVertical, makeHorizontal, xDistance, yDistance);
+                page.addHeaderAndFooter_test(headerText, footerText, headerX, footerX, fontToken, fontName, fontSize, fontColor, makeVertical, makeHorizontal, xDistance, yDistance);
             } 
         }
 

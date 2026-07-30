@@ -13,7 +13,7 @@ namespace pdfParserByMH
         public pdfDictionary parent {get; private set;}
         public pdfDictionary resources {get; set;}
         public double[] mediaBox {get; set;}
-        private pdfInteger rotateState;
+        public pdfInteger rotateState {get; private set;}
         private System.Collections.Generic.List<pdfStream> lstContents;
         public pdfPage(pdfDocument doc, pdfDictionary dict, int num = -1)
         {
