@@ -10,6 +10,11 @@ namespace pdfParserByMH
         public Utils()
         {}
 
+        static public int modulo(int n, int m)
+        {
+            return ((n % m) + m) % m;
+        }
+
         static public byte[] stringToBytes(string str)
         {
             return System.Text.Encoding.ASCII.GetBytes(str);

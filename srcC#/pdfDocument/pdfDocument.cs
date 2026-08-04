@@ -59,7 +59,6 @@ namespace pdfParserByMH
                 Console.WriteLine("Rotation State:");
                 Console.WriteLine(string.Format("{0}", page.rotateState.value.ToString()));
             }
-            
         }
 
         private void createPagesDict()

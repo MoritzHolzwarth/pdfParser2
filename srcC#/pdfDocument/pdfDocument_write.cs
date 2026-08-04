@@ -1,4 +1,6 @@
-﻿namespace pdfParserByMH
+﻿using System.IO;
+
+namespace pdfParserByMH
 {
     public sealed partial class pdfDocument
     {
@@ -18,47 +20,50 @@
             {
                 throw new System.Exception("Error in pdfDocument.writeNormal(): outputPath is null!");
             }
-            System.IO.FileStream fileStream = new System.IO.FileStream(outputPath,System.IO.FileMode.Create);
-            fileStream.Write(Utils.stringToBytes("%PDF-1.6\n"),0,9);
-            fileStream.Write(new byte[] {(byte)'%',(byte)'ä', (byte)'ö', (byte)'ü', 0x0A},0,5); //A bunch of random non-ASCII bytes at the top is just pdf-Standard
- 
-            int[] arrObjIndices = xref.keys();
-            System.Array.Sort(arrObjIndices); //Lets write the objects in numerically sorted order, makes things easier
-            int maxIndex = arrObjIndices[arrObjIndices.Length-1];
-            byte[] endobjToken = getEndObjToken();
-            //We will be writing the xref as one large, conventional Table of possible several blocks.
-            System.Collections.Generic.Dictionary<int,xrefEntry> newXRefDict = new System.Collections.Generic.Dictionary<int,xrefEntry>();
-            newXRefDict.Add(0,new xrefEntry(0,65535,0,0)); //The standart zero object of every pdf
-            System.Collections.Generic.List<int[]> xrefBlockHeaders = new System.Collections.Generic.List<int[]>(); //each xref block, has a header, i.e. two numbers: 'first object index in block', 'number of objects in block'
-                                                                                                                    //Note though: this list instread stored the number pairs: 'first object index in block', 'last object index in block'
-            int latestIndex = 0; //Keeps track of the object that was last stored in the file (important for contiguous xref-Blocks)
-            int[] firstAndLastIndex = new int[] {0,0};
-            foreach(int index in arrObjIndices)
+            string longOutPath = "\\\\?\\" + Path.GetFullPath(outputPath);  //This prefix disabeles the Windows-Legacy Path parser which would restrict the path length
+            using (FileStream fileStream = new System.IO.FileStream(longOutPath, System.IO.FileMode.Create))  //using is same a try{} - finally{}, where fileStream.Dispose() is called in "finally" such that the file is closed and can be accessed by someone else.
             {
-                if(index > latestIndex + 1 || index == maxIndex) //'index > latestIndex + 1' means that the latest contiguous xref-Block is finished. Same for the special case that the maxIndex is reached.
-                {                                                //Note: this strategy only works because the object indices are stored in a numerically sorted order!
-                    firstAndLastIndex[1] = (index == maxIndex)? index: latestIndex; //In that case, close the latest xref-Block's header with the latestIndex (or with the current index in the special case of maxIndex (i.e. xref completely finished))
-                    xrefBlockHeaders.Add(firstAndLastIndex); //Store the latest xref-Block-Header
-                    firstAndLastIndex = new int[] {index, 0}; //Create a new xref-Block-Header from the current index (if index == maxIndex, this doenst matter)
+                fileStream.Write(Utils.stringToBytes("%PDF-1.6\n"),0,9);
+                fileStream.Write(new byte[] {(byte)'%',(byte)'ä', (byte)'ö', (byte)'ü', 0x0A},0,5); //A bunch of random non-ASCII bytes at the top is just pdf-Standard
+    
+                int[] arrObjIndices = xref.keys();
+                System.Array.Sort(arrObjIndices); //Lets write the objects in numerically sorted order, makes things easier
+                int maxIndex = arrObjIndices[arrObjIndices.Length-1];
+                byte[] endobjToken = getEndObjToken();
+                //We will be writing the xref as one large, conventional Table of possible several blocks.
+                System.Collections.Generic.Dictionary<int,xrefEntry> newXRefDict = new System.Collections.Generic.Dictionary<int,xrefEntry>();
+                newXRefDict.Add(0,new xrefEntry(0,65535,0,0)); //The standart zero object of every pdf
+                System.Collections.Generic.List<int[]> xrefBlockHeaders = new System.Collections.Generic.List<int[]>(); //each xref block, has a header, i.e. two numbers: 'first object index in block', 'number of objects in block'
+                                                                                                                        //Note though: this list instread stored the number pairs: 'first object index in block', 'last object index in block'
+                int latestIndex = 0; //Keeps track of the object that was last stored in the file (important for contiguous xref-Blocks)
+                int[] firstAndLastIndex = new int[] {0,0};
+                foreach(int index in arrObjIndices)
+                {
+                    if(index > latestIndex + 1 || index == maxIndex) //'index > latestIndex + 1' means that the latest contiguous xref-Block is finished. Same for the special case that the maxIndex is reached.
+                    {                                                //Note: this strategy only works because the object indices are stored in a numerically sorted order!
+                        firstAndLastIndex[1] = (index == maxIndex)? index: latestIndex; //In that case, close the latest xref-Block's header with the latestIndex (or with the current index in the special case of maxIndex (i.e. xref completely finished))
+                        xrefBlockHeaders.Add(firstAndLastIndex); //Store the latest xref-Block-Header
+                        firstAndLastIndex = new int[] {index, 0}; //Create a new xref-Block-Header from the current index (if index == maxIndex, this doenst matter)
+                    }
+                    latestIndex = index;
+                    int offset = (int)fileStream.Length; //The current size of the file will be the position of the next object
+                    int generation = 0; //We just give all objects generation 0, because generations are nowadays useless and only present for historical consistency
+                    byte[] objHeader = getObjectHeader(index, generation);
+                    fileStream.Write(objHeader,0,objHeader.Length); //write the object's header
+                    byte[] objBody = writePDFEntity(xref.get(index));
+                    fileStream.Write(objBody,0,objBody.Length); //write the object's body
+                    fileStream.Write(endobjToken,0,endobjToken.Length); //write the endobj token
+                    xrefEntry entry = new xrefEntry(index,generation,1,offset); //use status of all objects will be 1, except for the standart zero object
+                    newXRefDict.Add(index,entry); //store the newly written object in the new document's xref
                 }
-                latestIndex = index;
-                int offset = (int)fileStream.Length; //The current size of the file will be the position of the next object
-                int generation = 0; //We just give all objects generation 0, because generations are nowadays useless and only present for historical consistency
-                byte[] objHeader = getObjectHeader(index, generation);
-                fileStream.Write(objHeader,0,objHeader.Length); //write the object's header
-                byte[] objBody = writePDFEntity(xref.get(index));
-                fileStream.Write(objBody,0,objBody.Length); //write the object's body
-                fileStream.Write(endobjToken,0,endobjToken.Length); //write the endobj token
-                xrefEntry entry = new xrefEntry(index,generation,1,offset); //use status of all objects will be 1, except for the standart zero object
-                newXRefDict.Add(index,entry); //store the newly written object in the new document's xref
+                int startxref = (int)fileStream.Length; //get the startxref position before writing the xref ..
+                byte[] xrefAndTrailer = getXRefAndTrailerBytes(newXRefDict, xrefBlockHeaders.ToArray());
+                fileStream.Write(xrefAndTrailer, 0, xrefAndTrailer.Length); //.. then write the xref
+                //byte[] fileclosing = Utils.stringToBytes($"\nstartxref {startxref}\n%%EOF"); > C# 5 
+                byte[] fileclosing = Utils.stringToBytes(string.Format("\nstartxref {0}\n%%EOF", startxref)); //then write the startxref and EOF
+                fileStream.Write(fileclosing,0,fileclosing.Length);
+                fileStream.Close();
             }
-            int startxref = (int)fileStream.Length; //get the startxref position before writing the xref ..
-            byte[] xrefAndTrailer = getXRefAndTrailerBytes(newXRefDict, xrefBlockHeaders.ToArray());
-            fileStream.Write(xrefAndTrailer, 0, xrefAndTrailer.Length); //.. then write the xref
-            //byte[] fileclosing = Utils.stringToBytes($"\nstartxref {startxref}\n%%EOF"); > C# 5 
-            byte[] fileclosing = Utils.stringToBytes(string.Format("\nstartxref {0}\n%%EOF", startxref)); //then write the startxref and EOF
-            fileStream.Write(fileclosing,0,fileclosing.Length);
-            fileStream.Close();
         }
 
         private byte[] getObjectHeader(int index, int generation)
