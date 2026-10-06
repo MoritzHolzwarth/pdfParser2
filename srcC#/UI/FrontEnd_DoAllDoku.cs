@@ -34,16 +34,27 @@ namespace pdfParserByMH
                 }
                 if(filePaths.Length > 1)
                 {
-                    string multipleFiles = "";
-                    foreach(string f in filePaths)
-                        multipleFiles += Path.GetFileName(f) + "\n";
-                    MessageBox.Show(string.Format("Für den Dokumententyp '{0}' wurden mehrere pdf-Dateien gefunden.\nAlle Dateien werden nun gestempelt.\n{1}", docName, multipleFiles),
-                                    "Warnung", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    // I used to prompt a message when finding several files of same type, but its probably no longer sensible.
+                    // string multipleFiles = "";
+                    // foreach(string f in filePaths)
+                    //     multipleFiles += Path.GetFileName(f) + "\n";
+                    // MessageBox.Show(string.Format("Für den Dokumententyp '{0}' wurden mehrere pdf-Dateien gefunden.\nAlle Dateien werden nun gestempelt.\n{1}", docName, multipleFiles),
+                    //                 "Warnung", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     Console.WriteLine("Warning in allDokuStempeln(): More than one File found for " + docName + "! All files will be processed!");
                 }
                 string dirGestempelt = Path.Combine(uploadFolderPath, subFolderName, "gestempelt");
                 foreach(string filePath in filePaths)
                 {
+                    if(docName == "Abfalldatenblatt")   //Get ADBRev for each ADB individually
+                    {
+                        if(!getADBRev(filePath) && (docdata.header.Contains(ADBRev_placeholder) || docdata.footer.Contains(ADBRev_placeholder)))
+                        {
+                            MessageBox.Show(string.Format("Für die Datei {0} konnte die ADB-Revisionsnumme nicht eindeutig erkannt werden gemäß dem Schema '{...}Rev.{ADB-Rev}ENDE'!", filePath),
+                                    "Fehler", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            lstMissedFiles.Add(docName);
+                                continue;
+                        }
+                    }
                     string outPath;
                     if(overrideDokuFiles)
                     {
@@ -123,19 +134,20 @@ namespace pdfParserByMH
                     return false;
                 }       
             }
-            if(dictDocs["Abfalldatenblatt"].selected)
-            {
-                if(!getADBRev())
-                {
-                    if( dictDocs.Values.Any(x => x.selected && (x.header.Contains(ADBRev_placeholder) || x.footer.Contains(ADBRev_placeholder))) )  //If any document that is supposed to stempel has ADB-Rev in its header or footer
-                    {
-                        MessageBox.Show("ADB-Reviosionsnummer nicht erkannt!\n" + 
-                                "Es wird benötigt, dass die ADB-Datei eindeutig ist und die ADB-Revisionsnummer im Dateinamen eindeutig gemäß dem Schema '{...}Rev.{ADB-Rev}ENDE' vorliegt!",
-                                "Fehler", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return false;
-                    }
-                }   
-            } 
+            //  ADBRev is from now on obtained for each (of several) ADBs individually
+            // if(dictDocs["Abfalldatenblatt"].selected)
+            // {
+            //     if(!getADBRev())
+            //     {
+            //         if( dictDocs.Values.Any(x => x.selected && (x.header.Contains(ADBRev_placeholder) || x.footer.Contains(ADBRev_placeholder))) )  //If any document that is supposed to stempel has ADB-Rev in its header or footer
+            //         {
+            //             MessageBox.Show("ADB-Reviosionsnummer nicht erkannt!\n" + 
+            //                     "Es wird benötigt, dass die ADB-Datei eindeutig ist und die ADB-Revisionsnummer im Dateinamen eindeutig gemäß dem Schema '{...}Rev.{ADB-Rev}ENDE' vorliegt!",
+            //                     "Fehler", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            //             return false;
+            //         }
+            //     }   
+            // } 
             return true;
         }
 
@@ -182,7 +194,28 @@ namespace pdfParserByMH
             return true;
         }
 
-        private bool getADBRev()
+        private bool getADBRev(string ADBFilePath)
+        {
+            string pattern = "Rev.(?<rev>\\d+)$";
+            string ADBFileName = Path.GetFileNameWithoutExtension(ADBFilePath);
+            System.Text.RegularExpressions.Regex regRev = new System.Text.RegularExpressions.Regex(pattern);
+            var matches = regRev.Matches(ADBFileName);
+            ADBRev = null;
+            if(matches.Count == 0)
+            {
+                Console.WriteLine("Error in FrontEndProgram.getADBRev(): No ADBRev-match found in file name!");
+                return false;
+            }
+            if(matches.Count > 1)
+            {
+                Console.WriteLine("Error in FrontEndProgram.getADBRev(): More than 1 ADBRev-matches found in file name!");
+                return false;
+            }
+            ADBRev = matches[0].Groups["rev"].Value;
+            return true;
+        }
+
+        private bool getADBRev_old()
         {
             DocData docData = dictDocs["Abfalldatenblatt"];
             string[] ADBFilePaths = Directory.GetFiles(Path.Combine(uploadFolderPath, docData.folderName), docData.fileApproxName, SearchOption.TopDirectoryOnly);
@@ -214,10 +247,11 @@ namespace pdfParserByMH
 
         private bool stempelDokuDoc(DocData docData, string filePath, string outPath)
         {
-            string header = insertPlaceHolders(docData.header);
-            string footer = insertPlaceHolders(docData.footer);
             try
             {
+                string header = insertPlaceHolders(docData.header);
+                string footer = insertPlaceHolders(docData.footer);
+
                 doc.setFilePath(filePath);
                 doc.setOutputPath(outPath);
                 doc.stempeln(header, footer, docData.headerXPos, docData.footerXPos, "/Helvetica", 12, docData.textColor, docData.scaleFactor, 

@@ -46,7 +46,7 @@ namespace pdfParserByMH
             return true;
         }
 
-        public void printData()
+        public void printData()     // Only used for Debugging
         {
             if(pagesDict == null)
                 return;

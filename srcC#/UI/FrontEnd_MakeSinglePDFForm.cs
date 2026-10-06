@@ -32,7 +32,8 @@ namespace pdfParserByMH
             y = SinglePDFForm_makeVerticalPagesControl(y + 10);
             y = SinglePDFForm_makeHorizontalPagesControl(y + 10);
             y = SinglePDFForm_makePageScalingAndTextColorControl(y + 10);
-            y = SinglePDFForm_makeOKButtonControl(y + 10);
+            y = SinglePDFForm_makeStempelnButtonControl(y + 10);
+            y = SingelPDFForm_makeTippsControl(y + 20);
         }
 
         private void SinglePDFForm_readFields()
@@ -371,7 +372,7 @@ namespace pdfParserByMH
             return y;
         }
 
-        private int SinglePDFForm_makeOKButtonControl(int y)
+        private int SinglePDFForm_makeStempelnButtonControl(int y)
         {
             int x = 350;
             Button okButton = new Button();
@@ -387,6 +388,18 @@ namespace pdfParserByMH
                 form.Close();
             };
             y += okButton.Size.Height;
+            return y;
+        }
+
+        private int SingelPDFForm_makeTippsControl(int y)
+        {
+            int x = 40;
+            System.Windows.Forms.Label tipps_Label = new Label();
+            SinglePDFForm.Controls.Add(tipps_Label);
+            tipps_Label.Location = new System.Drawing.Point(x, y);
+            tipps_Label.Text = "Hinweis: Die Nummer einzelner Seiten, sowie die Anzahl aller Seiten,\r\nkönnen durch die Variablen {pagenum}, bzw. {pagecount} genannt werden.";
+            tipps_Label.AutoSize = true;
+            y += tipps_Label.Height;
             return y;
         }
     }

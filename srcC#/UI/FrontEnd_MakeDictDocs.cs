@@ -133,7 +133,7 @@ namespace pdfParserByMH
                     kvp.Value.horiPagesQuantifier = PageQuantifiers.NoneExceptArray;
                     kvp.Value.horiPagesNumbers = new int[] {};
                     kvp.Value.textColor = new double[] {1, 0, 0};
-                    kvp.Value.scaleFactor = 0.9;
+                    kvp.Value.scaleFactor = 1;
                 }
                 else
                 {
