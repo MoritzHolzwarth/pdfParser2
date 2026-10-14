@@ -1,11 +1,17 @@
 using System;
 using System.CodeDom;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Data.Common;
+using System.Diagnostics.Eventing.Reader;
 using System.Drawing;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.Remoting;
 using System.Runtime.Remoting.Messaging;
 using System.Runtime.Serialization;
+using System.Text;
 using System.Windows.Forms;
 
 namespace pdfParserByMH
@@ -31,11 +37,11 @@ namespace pdfParserByMH
         private string getFreeFontToken(string[] arrTokens)
         {
             int i = 1;
-            string token = $"/F{i}";
+            string token = "/F" + i.ToString();
             while(arrTokens.Contains(token))
             {
                 i++;
-                token = $"/F{i}";
+                token = "/F" + i.ToString();
             }
             return token;
         }
@@ -47,8 +53,9 @@ namespace pdfParserByMH
                 pdfEntity contentEnt = dictionary.getResolved("/Contents");  //The usual procedure: dictionary.get() might just return an obRef, 
                                                                             //which may just lead to another obRef, which must eventually lead to some not-obRef.
                                                                             //via .getResolved() we get that final non-obRef entity directly.
-                if(contentEnt is pdfArray contArr) //That content-Entity should usually be a pdfArray of obRefs, each leading so some contnet-pdfStream
+                if(contentEnt is pdfArray) //That content-Entity should usually be a pdfArray of obRefs, each leading so some contnet-pdfStream
                 {
+                    pdfArray contArr = (pdfArray)contentEnt;
                     if(atBeginning)
                     {
                         contArr.InsertAtBeginning(streamObRef, document.xref); //we add the new streamObRef to the pdfArray, and also pass the document's xrefCollection (i.e. xref)
@@ -97,19 +104,19 @@ namespace pdfParserByMH
         private bool makePageVertical()
         {
             bool defaultIsVertical = mediaBox[2] < mediaBox[3];
-            bool rotateStateIsEven = rotateState.value == 0 || rotateState.value == 180;
+            bool rotateStateIsEven = Utils.modulo(rotateState.value, 180) == 0;
             if(defaultIsVertical)
             {
                 if(rotateStateIsEven)
                 {
                     return false; //page is already vertical, no adjustment needed
                 }
-                rotateState.value = (rotateState.value + 90) % 360;
+                rotateState.value = Utils.modulo(rotateState.value + 270, 360);
                 return true; //page vas not vertical. Adjustment applied
             }
             if(rotateStateIsEven)
             {
-                rotateState.value = (rotateState.value + 90) % 360;
+                rotateState.value = Utils.modulo(rotateState.value + 270, 360);
                 return true; //page vas not vertical. Adjustment applied
             }
             return false; //page is already vertical, no adjustment needed
@@ -118,86 +125,162 @@ namespace pdfParserByMH
         private bool makePageHorizontal()
         {
             bool defaultIsHorizontal = mediaBox[2] > mediaBox[3];
-            bool rotateStateIsEven = rotateState.value == 0 || rotateState.value == 180;
+            bool rotateStateIsEven = Utils.modulo(rotateState.value, 180) == 0;
             if(defaultIsHorizontal)
             {
                 if(rotateStateIsEven)
                 {
                     return false; //page is already horizonzal, no adjustment needed
                 }
-                rotateState.value = (rotateState.value + 90) % 360;
+                rotateState.value = Utils.modulo(rotateState.value + 90, 360);
                 return true; //page vas not horizonzal. Adjustment applied
             }
             if(rotateStateIsEven)
             {
-                rotateState.value = (rotateState.value + 90) % 360;
+                rotateState.value = Utils.modulo(rotateState.value + 90, 360);
                 return true; //page vas not horizonzal. Adjustment applied
             }
             return false; //page is already horizonzal, no adjustment needed
         }
 
+        //addHeaderAndFooter includes some possible page rotation in order to assure header and footer are always placed on small side of the page
+        // (i.e.up and down if the page is vertical, right and left if the page is horizontal).
+        //This includes the decision of whether to turn the Header/Footer-text of a horizontal page by +90 degrees or -90 degrees (clockwise).
+        //Here we chose the +90 degreed convention, specifically by the -1, +1 positions on the cmMatrix in getHeaderFooterCMMatrix.
         public void addHeaderAndFooter(string headerText, string footerText, PageXPosition headerX, PageXPosition footerX, string fontToken, string fontName, int fontSize, double[] fontColor, 
                                         bool makeVertical =false, bool makeHorizontal =false, int xDistance = 20, int yDistance = 20)
         {
-            bool rotationApplied = enforcePageOriantation(makeVertical, makeHorizontal);
-            (string[], double[]) formatHeaderResult = formatStringForPDFStream(headerText, fontName, fontSize);
-            (string[], double[]) formatFooterResult = formatStringForPDFStream(footerText, fontName, fontSize);
+            enforcePageOriantation(makeVertical, makeHorizontal);   //This is only a sigle flag for the renderer. Does nothing to any stream or mediaBox.
+            ValueTuple<string[], double[]> formatHeaderResult = formatStringForPDFStream(headerText, fontName, fontSize);
+            ValueTuple<string[], double[]> formatFooterResult = formatStringForPDFStream(footerText, fontName, fontSize);
             string[] arrHeaderText = formatHeaderResult.Item1;
             double[] arrHeaderTextWidths = formatHeaderResult.Item2;
             string[] arrFooterText = formatFooterResult.Item1;
             double[] arrFooterTextWidths = formatFooterResult.Item2;
-            double headerXPos = getTextLineXPosValue(headerX, mediaBox, arrHeaderTextWidths[0], xDistance, rotationApplied);
-            double footerXPos = getTextLineXPosValue(footerX, mediaBox, arrFooterTextWidths[0], xDistance, rotationApplied);
+            double headerXPos = getTextLineXPosValue(headerX, mediaBox, arrHeaderTextWidths[0], xDistance);
+            double footerXPos = getTextLineXPosValue(footerX, mediaBox, arrFooterTextWidths[0], xDistance);
             double headerYPos = mediaBox[1] + mediaBox[3] - yDistance;
-            double footerYPos = mediaBox[1] + yDistance + (rotationApplied? (mediaBox[3] - mediaBox[2]): 0);
+            double footerYPos = mediaBox[1] + yDistance;
             double[] header_relXPos = getTextLinesRelativeXPosValues(headerX, arrHeaderTextWidths, arrHeaderTextWidths[0]);
             double[] footer_relXPos = getTextLinesRelativeXPosValues(footerX, arrFooterTextWidths, arrFooterTextWidths[0]);
             
-            string headerCommand = getTextBlockStreamCommand(arrHeaderText, headerXPos, header_relXPos, headerYPos, fontSize, fontToken, fontColor, rotationApplied);
-            string footerCommand = getTextBlockStreamCommand(arrFooterText, footerXPos, footer_relXPos, footerYPos, fontSize, fontToken, fontColor, rotationApplied);
-            string fullCommand = $"\n/HeaderAndFooterByMH BMC\n{headerCommand}\n{footerCommand}\nEMC\n";
+            string headerCommand = getTextBlockStreamCommand(true ,arrHeaderText, headerX, headerXPos, header_relXPos, headerYPos, fontSize, fontToken, fontColor);
+            string footerCommand = getTextBlockStreamCommand(false, arrFooterText, footerX, footerXPos, footer_relXPos, footerYPos, fontSize, fontToken, fontColor);
+            string fullCommand = string.Format("\n/HeaderAndFooterByMH BMC\n{0}\n{1}\nEMC\n", headerCommand, footerCommand);
             
             pdfObjectReference headerFooterStreamObRef = document.createNewStreamFromUncompressedData(Utils.stringToBytes(fullCommand));
-            addObRefToContent(headerFooterStreamObRef, false); //'false' meand 'add at end of /Contents'
+            addObRefToContent(headerFooterStreamObRef, false); //'false' means 'add at end of /Contents'
         }
 
-        private string getTextBlockStreamCommand(string[] arrText, double xpos, double[] rel_xpos, double ypos, int fontSize, string fontToken, double[] fontColor, bool rotate)
+        private string getTextBlockStreamCommand(bool forHeader, string[] arrText, PageXPosition xType, double xpos, double[] rel_xpos, double ypos, int fontSize, string fontToken, double[] fontColor)
         {
-            int lineHeight = System.Convert.ToInt32(fontSize*1.2);
-            string cmCommand = rotate? $"0 1 -1 0 {mediaBox[3]} 0 cm": "";
-            string rgCommand = $"{fontColor[0]} {fontColor[1]} {fontColor[2]} rg";
-            string tfCommand = $"{fontToken} {fontSize} Tf";
-            string tlCommand = $"{lineHeight} TL";
+            int lineHeight = -Convert.ToInt32(fontSize*1.2);
+            string cmCommand = getHeaderFooterCMMatrix(xType, forHeader);
+            string rgCommand = string.Format("{0} {1} {2} rg", fontColor[0], fontColor[1], fontColor[2]);
+            string tfCommand = string.Format("{0} {1} Tf", fontToken, fontSize);
+            string tlCommand = string.Format("{0} TL", lineHeight); 
             System.Text.StringBuilder strBuild = new System.Text.StringBuilder();
-            strBuild.Append($"{xpos + rel_xpos[0]} {ypos} Td");
-            strBuild.Append($"\n{arrText[0]} Tj");
+            strBuild.Append(string.Format("{0} {1} Td", xpos + rel_xpos[0], ypos));
+            strBuild.Append(string.Format("\n{0} Tj", arrText[0]));
             if(arrText.Length > 1)
             {
                 for(int i=1; i<arrText.Length; i++)
                 {
-                    strBuild.Append($"\n{+rel_xpos[i]} {-lineHeight} Td");
-                    strBuild.Append($"\n{arrText[i]} Tj");
+                    strBuild.Append(string.Format("\n{0} {1} Td", rel_xpos[i], lineHeight));
+                    strBuild.Append(string.Format("\n{0} Tj", arrText[i]));
                 }
             }
             string tdtjCommand = strBuild.ToString();
-            string fullCommand = $"q\n{cmCommand}\n BT \n{rgCommand}\n{tfCommand}\n{tlCommand}\n{tdtjCommand}\n ET \nQ";
+            string fullCommand = string.Format("q\n{0}\n BT \n{1}\n{2}\n{3}\n{4}\n ET \nQ", cmCommand, rgCommand, tfCommand, tlCommand, tdtjCommand);
             return fullCommand;
         }
 
-        private double getTextLineXPosValue(PageXPosition xpos, double[] mediaBox, double textWidth, double xBoundary, bool rotationApplied)
+        private string getHeaderFooterCMMatrix(PageXPosition xType, bool forHeader)
+        {
+            bool defaultIsHorizontal = mediaBox[2] > mediaBox[3];
+            int rotateState_mod360 = Utils.modulo(rotateState.value, 360);
+
+            string cmCommand;
+            double dx, dy;
+            
+            if(defaultIsHorizontal)
+            {
+                if(rotateState_mod360 == 0 || rotateState_mod360 == 270)
+                {
+                    dx = (forHeader)? mediaBox[2] - mediaBox[3]: 0;
+                    switch (xType)
+                    {
+                        case PageXPosition.Left:
+                            dy = mediaBox[3];
+                            break;
+                        case PageXPosition.Middle:
+                            dy = 0.5*(mediaBox[2] + mediaBox[3]);
+                            break;
+                        case PageXPosition.Right:
+                            dy = mediaBox[2];
+                            break;
+                        default:
+                            throw new Exception(string.Format("Error in pdfPage_edit.getHeaderFooterCMMatrix: Invalid PageXPosition! {0}", xType));
+                    }
+                    cmCommand = string.Format("0 -1 1 0 {0} {1} cm", dx, dy);
+                }
+                else if(rotateState_mod360 == 90 || rotateState_mod360 == 180)
+                {
+                    dx = (forHeader)? mediaBox[3]: mediaBox[2];
+                    switch (xType)
+                    {
+                        case PageXPosition.Left:
+                            dy = 0;
+                            break;
+                        case PageXPosition.Middle:
+                            dy = -0.5*(mediaBox[2] - mediaBox[3]);
+                            break;
+                        case PageXPosition.Right:
+                            dy = -(mediaBox[2] - mediaBox[3]);
+                            break;
+                        default:
+                            throw new Exception(string.Format("Error in pdfPage_edit.getHeaderFooterCMMatrix: Invalid PageXPosition! {0}", xType));
+                    }
+                    cmCommand = string.Format("0 1 -1 0 {0} {1} cm", dx, dy);
+                }
+                else
+                    throw new Exception(string.Format("Error in pdfPage_edit.getHeaderFooterCMMatrix: Invalid rotateState_mod360! {0}", rotateState_mod360));
+            }
+            else
+            {
+                if(rotateState_mod360 == 0 || rotateState_mod360 == 90)
+                {
+                    cmCommand = "";
+                }
+                else if(rotateState_mod360 == 180 || rotateState_mod360 == 270)
+                {
+                    dx = mediaBox[2];
+                    dy = mediaBox[3];
+                    cmCommand = string.Format("-1 0 0 -1 {0} {1} cm", dx, dy);
+                }
+                else
+                    throw new Exception(string.Format("Error in pdfPage_edit.getHeaderFooterCMMatrix: Invalid rotateState_mod360! {0}", rotateState_mod360));
+            }
+            return cmCommand;
+        }
+
+
+        private double getTextLineXPosValue(PageXPosition xpos, double[] mediaBox, double textWidth, double xBoundary)
         {
             switch (xpos)
             {
                 case PageXPosition.Left:
                     return mediaBox[0] + xBoundary;
                 case PageXPosition.Middle:
-                    return 0.5*(-textWidth + (rotationApplied? mediaBox[3] + mediaBox[1]: mediaBox[2] + mediaBox[0]));
+                    return 0.5*(-textWidth +  mediaBox[2] + mediaBox[0]);
                 case PageXPosition.Right:
-                    return -textWidth - xBoundary + (rotationApplied? mediaBox[3] + mediaBox[1]: mediaBox[2] + mediaBox[0]);
+                    return -textWidth - xBoundary +  mediaBox[2] + mediaBox[0];
                 default:
-                    throw new System.Exception($"Error in pdfPage.getHeaderFooterXPositionValue(): unknown PageXPosition Value {xpos}!");
+                    //throw new System.Exception($"Error in pdfPage.getHeaderFooterXPositionValue(): unknown PageXPosition Value {xpos}!"); > C# 5
+                    throw new System.Exception(string.Format("Error in pdfPage.getHeaderFooterXPositionValue(): unknown PageXPosition Value {0}!", xpos));
             }
         }
+
 
         private double[] getTextLinesRelativeXPosValues(PageXPosition xpos, double[] textWidths, double referenceWidth)
         {
@@ -210,7 +293,7 @@ namespace pdfParserByMH
                 case PageXPosition.Right:
                     return textWidths.Select(s => referenceWidth - s).ToArray();
                 default:
-                    throw new System.Exception($"Error in pdfPage.getHeaderFooterRelativeXPosValues(): unknown PageXPosition Value {xpos}!");
+                    throw new System.Exception(string.Format("Error in pdfPage.getHeaderFooterRelativeXPosValues(): unknown PageXPosition Value {0}!", xpos));
             }
         }
 
@@ -227,14 +310,100 @@ namespace pdfParserByMH
         }
 
 
-
-
-        public bool removeHeaderAndFooter()
+        public bool removeHeaderAndFooter_new()  //Never used this Function so far. Dont know if it works correctly
         {
-            byte[] arrContiguosData = new byte[0];
-            byte[][] arrDatasets = new byte[0][];
+            byte[] arrContiguosData = new byte[0];  //data of a streams in this page, glued together
+            byte[][] arrDatasets = new byte[0][];   //all individual stream datas in page sequencial order
             getContiguousDataAndDatasetArray(ref arrContiguosData, ref arrDatasets);
-            string fullPageCode = Utils.bytesToString(arrContiguosData);
+            string fullPageCode = Utils.bytesToString(arrContiguosData);    //represent bytes as Latin1 string for use of regex
+            string pattern = "/HeaderAndFooterByMH\\s+BMC";
+            System.Text.RegularExpressions.Regex reg = new System.Text.RegularExpressions.Regex(pattern);
+            if(!reg.IsMatch(fullPageCode))
+            {
+                return false;
+            }
+            var matches = reg.Matches(fullPageCode);
+
+            bool foundMarkedContent = false;
+            
+            foreach(System.Text.RegularExpressions.Match match in matches)
+            {
+                int markedContStartPos_global = match.Index;   //starting position of marekd content in contiguous stream data
+                int lenMarkedContent = -1;
+                ByteSpan markedContentSpan = new ByteSpan(arrContiguosData);
+                markedContentSpan = markedContentSpan.Slice(markedContStartPos_global);
+                if(!Utils.readMarkedContentInStream(markedContentSpan, ref lenMarkedContent))
+                {
+                    Console.Error.WriteLine("Note in pdfPage.removeHeaderAndFooter(): found seemingly marked Content that didn't validate!");
+                    continue;
+                }
+                else
+                {
+                    foundMarkedContent = true;
+                }
+                int posBehindMarkedCont_global = markedContStartPos_global + lenMarkedContent + 1; //position behind marekd content in contiguous stream data
+
+                int startStreamIndex = -1;
+                int endStreamIndex = -1;
+                int markedContStartPos_local = -1;
+                int posBehindMarkedCont_local = -1;
+                int lenBeforeMarkedContent = -1;
+                int lenBehindMarkedContent = -1;
+
+                int offset = 0; //measured how far we move in the contiguous stream data when iterating over individual streams
+                for(int i=0; i<arrDatasets.Length; i++) //Find the individual streams in which the marked content starts and ends
+                {
+                    int datasetLen = arrDatasets[i].Length;
+                    if((offset +  datasetLen > markedContStartPos_global) && (startStreamIndex == -1))  //check if the marked content starts before this stream's end
+                    {                                                                                   //If that is the case, and this is the first such stream, then the marked content starts inside this stream
+                        startStreamIndex = i;
+                        markedContStartPos_local = markedContStartPos_global - offset;
+                        lenBeforeMarkedContent = markedContStartPos_local;
+                    }
+                    if((offset + datasetLen >= posBehindMarkedCont_global) && (endStreamIndex == -1))   //check if the marked content ends before this stream's end
+                    {                                                                                   //If that is the case, and this is the first such stream, then the marked content ends inside this stream
+                        endStreamIndex = i;
+                        posBehindMarkedCont_local = posBehindMarkedCont_global - offset;
+                        lenBehindMarkedContent = datasetLen - posBehindMarkedCont_local;
+                        break;
+                    }
+                    offset += datasetLen;
+                }
+                if(startStreamIndex == endStreamIndex)  //If the marked content starts and ends within the same stream
+                {
+                    byte[] markedStreamData = arrDatasets[startStreamIndex];    //all data of the stream with marked content
+                    int markedStreamDataLen = markedStreamData.Length;
+                    byte[] newStreamData = new byte[lenBeforeMarkedContent + lenBehindMarkedContent];   //the new stream data shall exclude the marked content, hence include only the data before and after the marked content.
+                    System.Array.Copy(markedStreamData,0,newStreamData,0,lenBeforeMarkedContent);       //copy the data before marked content from the original stream data to new stream data.
+                    System.Array.Copy(markedStreamData,posBehindMarkedCont_local,newStreamData,lenBeforeMarkedContent,lenBehindMarkedContent);  //copy the data behind the marked content from otiginal stream data to new stream data
+                    lstContents[startStreamIndex].setNewData(newStreamData);    //simply replace the old stream data (with marked content) with the new stream data (without marked content)
+                }
+                else
+                {
+                    byte[] startStreamData = arrDatasets[startStreamIndex]; //all data of the stream in which marked content starts
+                    byte[] endStreamData = arrDatasets[endStreamIndex];     //all data of the stream in which marked content ends
+                    byte[] newStartStreamData = new byte[lenBeforeMarkedContent];   //The stream where the marked content starts shall keep only its data before the marked content
+                    byte[] newEndStreamData = new byte[lenBehindMarkedContent];     //The stream where the marked content ends shall keep only its data behind the marked content *..
+                    System.Array.Copy(startStreamData,0,newStartStreamData,0,lenBeforeMarkedContent);
+                    System.Array.Copy(endStreamData,posBehindMarkedCont_local,newEndStreamData,0,lenBehindMarkedContent);
+                    lstContents[startStreamIndex].setNewData(newStartStreamData);
+                    lstContents[endStreamIndex].setNewData(newEndStreamData);
+                    for(int i=startStreamIndex+1; i<endStreamIndex; i++)
+                    {
+                        lstContents[i].setNewData(new byte[0]); //*.. and all inbetween streams shall have no data at all, since all their data was purely marked content
+                    }
+                }
+
+            }
+            return foundMarkedContent;
+        }
+
+        public bool removeHeaderAndFooter()  //Never used this Function so far. Dont know if it works correctly
+        {
+            byte[] arrContiguosData = new byte[0];  //data of a streams in this page, glued together
+            byte[][] arrDatasets = new byte[0][];   //all individual stream datas in page sequencial order
+            getContiguousDataAndDatasetArray(ref arrContiguosData, ref arrDatasets);
+            string fullPageCode = Utils.bytesToString(arrContiguosData);    //represent bytes as Latin1 string for use of regex
             string pattern = "/HeaderAndFooterByMH\\s+BMC((?!EMC)[\\s\\S])*EMC";
             System.Text.RegularExpressions.Regex reg = new System.Text.RegularExpressions.Regex(pattern);
             if(!reg.IsMatch(fullPageCode))
@@ -243,27 +412,27 @@ namespace pdfParserByMH
             }
             var matches = reg.Matches(fullPageCode);
             if(matches.Count > 1)
-                throw new System.Exception($"Error in pdfPage.undo_Stempeln(): more than one Stempel marker found in page {this.number}");
-            int markedContStartPos_global = matches[0].Index;
-            int posBehindMarkedCont_global = markedContStartPos_global + matches[0].Length + 1; //Note: +1 (Behind)
+                throw new System.Exception(string.Format("Error in pdfPage.undo_Stempeln(): more than one Stempel marker found in page {0}", this.number));
+            int markedContStartPos_global = matches[0].Index;   //starting position of marekd content in contiguous stream data
+            int posBehindMarkedCont_global = markedContStartPos_global + matches[0].Length + 1; //position behind marekd content in contiguous stream data
             int startStreamIndex = -1;
             int endStreamIndex = -1;
             int markedContStartPos_local = -1;
             int posBehindMarkedCont_local = -1;
             int lenBeforeMarkedContent = -1;
             int lenBehindMarkedContent = -1;
-            int offset = 0;
-            for(int i=0; i<arrDatasets.Length; i++)
+            int offset = 0; //measured how far we move in the contiguous stream data when iterating over individual streams
+            for(int i=0; i<arrDatasets.Length; i++) //Find the individual streams in which the marked content starts and ends
             {
                 int datasetLen = arrDatasets[i].Length;
-                if((offset +  datasetLen > markedContStartPos_global) && (startStreamIndex == -1))
-                {
+                if((offset +  datasetLen > markedContStartPos_global) && (startStreamIndex == -1))  //check if the marked content starts before this stream's end
+                {                                                                                   //If that is the case, and this is the first such stream, then the marked content starts inside this stream
                     startStreamIndex = i;
                     markedContStartPos_local = markedContStartPos_global - offset;
                     lenBeforeMarkedContent = markedContStartPos_local;
                 }
-                if((offset + datasetLen >= posBehindMarkedCont_global) && (endStreamIndex == -1)) //Note: >=
-                {
+                if((offset + datasetLen >= posBehindMarkedCont_global) && (endStreamIndex == -1))   //check if the marked content ends before this stream's end
+                {                                                                                   //If that is the case, and this is the first such stream, then the marked content ends inside this stream
                     endStreamIndex = i;
                     posBehindMarkedCont_local = posBehindMarkedCont_global - offset;
                     lenBehindMarkedContent = datasetLen - posBehindMarkedCont_local;
@@ -271,27 +440,30 @@ namespace pdfParserByMH
                 }
                 offset += datasetLen;
             }
-            if(startStreamIndex == endStreamIndex)
+            if(startStreamIndex == endStreamIndex)  //If the marked content starts and ends within the same stream
             {
-                byte[] markedStreamData = arrDatasets[startStreamIndex];
+                byte[] markedStreamData = arrDatasets[startStreamIndex];    //all data of the stream with marked content
                 int markedStreamDataLen = markedStreamData.Length;
-                byte[] newStreamData = new byte[lenBeforeMarkedContent + lenBehindMarkedContent];
-                System.Array.Copy(markedStreamData,0,newStreamData,0,lenBeforeMarkedContent);
-                System.Array.Copy(markedStreamData,posBehindMarkedCont_local,newStreamData,lenBeforeMarkedContent,lenBehindMarkedContent);
-                lstContents[startStreamIndex].setNewData(newStreamData);
+                byte[] newStreamData = new byte[lenBeforeMarkedContent + lenBehindMarkedContent];   //the new stream data shall exclude the marked content, hence include only the data before and after the marked content.
+                System.Array.Copy(markedStreamData,0,newStreamData,0,lenBeforeMarkedContent);       //copy the data before marked content from the original stream data to new stream data.
+                System.Array.Copy(markedStreamData,posBehindMarkedCont_local,newStreamData,lenBeforeMarkedContent,lenBehindMarkedContent);  //copy the data behind the marked content from otiginal stream data to new stream data
+                lstContents[startStreamIndex].setNewData(newStreamData);    //simply replace the old stream data (with marked content) with the new stream data (without marked content)
                 return true;
             }
-            byte[] startStreamData = arrDatasets[startStreamIndex];
-            byte[] endStreamData = arrDatasets[endStreamIndex];
-            byte[] newStartStreamData = new byte[lenBeforeMarkedContent];
-            byte[] newEndStreamData = new byte[lenBehindMarkedContent];
-            System.Array.Copy(startStreamData,0,newStartStreamData,0,lenBeforeMarkedContent);
-            System.Array.Copy(endStreamData,posBehindMarkedCont_local,newEndStreamData,0,lenBehindMarkedContent);
-            lstContents[startStreamIndex].setNewData(newStartStreamData);
-            lstContents[endStreamIndex].setNewData(newEndStreamData);
-            for(int i=startStreamIndex+1; i<endStreamIndex; i++)
+            else
             {
-                lstContents[i].setNewData(new byte[0]);
+                byte[] startStreamData = arrDatasets[startStreamIndex]; //all data of the stream in which marked content starts
+                byte[] endStreamData = arrDatasets[endStreamIndex];     //all data of the stream in which marked content ends
+                byte[] newStartStreamData = new byte[lenBeforeMarkedContent];   //The stream where the marked content starts shall keep only its data before the marked content
+                byte[] newEndStreamData = new byte[lenBehindMarkedContent];     //The stream where the marked content ends shall keep only its data behind the marked content *..
+                System.Array.Copy(startStreamData,0,newStartStreamData,0,lenBeforeMarkedContent);
+                System.Array.Copy(endStreamData,posBehindMarkedCont_local,newEndStreamData,0,lenBehindMarkedContent);
+                lstContents[startStreamIndex].setNewData(newStartStreamData);
+                lstContents[endStreamIndex].setNewData(newEndStreamData);
+                for(int i=startStreamIndex+1; i<endStreamIndex; i++)
+                {
+                    lstContents[i].setNewData(new byte[0]); //*.. and all inbetween streams shall have no data at all, since all their data was purely marked content
+                }
             }
             return true;
         }
@@ -317,10 +489,10 @@ namespace pdfParserByMH
             }
         }
 
-        public (string[], double[]) formatStringForPDFStream(string str, string fontName, int fontSize)
+        public ValueTuple<string[], double[]> formatStringForPDFStream(string str, string fontName, int fontSize)
         {
-            string str1 = System.Text.RegularExpressions.Regex.Replace(str, "/PagesCount", $"{document.numPages}");
-            string str2 = System.Text.RegularExpressions.Regex.Replace(str1, "/PageNum", $"{number}");
+            string str1 = System.Text.RegularExpressions.Regex.Replace(str, "{pagecount}", document.numPages.ToString());
+            string str2 = System.Text.RegularExpressions.Regex.Replace(str1, "{pagenum}", number.ToString());
             str2 = str2.Replace("\r", "");
             string[] arrStrings = str2.Split('\n');
             double[] arrTrueStringLengths = new double[arrStrings.Length];
@@ -328,22 +500,34 @@ namespace pdfParserByMH
             {
                 string subStr = arrStrings[i];
                 arrTrueStringLengths[i] = document.fontData.getStandardizedTextLineWidth(subStr, fontName) * fontSize;
+                byte[] subStrBytes = Encoding.GetEncoding("Windows-1252").GetBytes(subStr);
                 System.Text.StringBuilder strBuild = new System.Text.StringBuilder();
                 strBuild.Append('(');
                 int j = 0;
                 while(j < subStr.Length)
                 {
-                    if(subStr[j] == '(' || subStr[j] == ')'|| subStr[j] == '\\')
+                    byte b = subStrBytes[j];
+                    if(b == '(' || b == ')'|| b == '\\')
                     {
                         strBuild.Append('\\');
+                        strBuild.Append((char)b);
+                        j++;
                     }
-                    strBuild.Append(subStr[j]);
-                    j++;
+                    else if(b > 127)
+                    {
+                        strBuild.Append("\\" + Convert.ToString(b, 8).PadRight(3,'0'));
+                        j++;
+                    }
+                    else
+                    {
+                        strBuild.Append((char)b);
+                        j++;
+                    }
                 }
                 strBuild.Append(')');
                 arrStrings[i] = strBuild.ToString();
             }
-            return (arrStrings, arrTrueStringLengths);
+            return new ValueTuple<string[],double[]>(arrStrings, arrTrueStringLengths);
         }
     }
 }

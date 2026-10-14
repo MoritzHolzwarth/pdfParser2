@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics.Tracing;
 using System.Linq;
@@ -8,42 +8,26 @@ namespace pdfParserByMH
     public sealed partial class pdfDocument
     {
         public bool stempeln(string headerText, string footerText, PageXPosition headerX, PageXPosition footerX, string fontName, int fontSize, double[] fontColor, 
-                            double scaleFactor = 1, PageQuantifiers forceVertical = PageQuantifiers.None, PageQuantifiers forceHorizontal = PageQuantifiers.None, 
+                            double scaleFactor = 1, PageQuantifiers forceVertical = PageQuantifiers.Null, PageQuantifiers forceHorizontal = PageQuantifiers.Null, 
                             int[] specificVerticalPages = null, int[] specificHorizontalPages = null, int xDistance = 20, int yDistance = 20)
         {
             System.Console.Error.WriteLine("pdfDocument started stempeln");
-            try
-            {
-                scaleAllPages(scaleFactor);
-                addHeaderAndFooterToAllPages(headerText, footerText, headerX, footerX, fontName, fontSize, fontColor, forceVertical, forceHorizontal,
-                                             specificVerticalPages, specificHorizontalPages, xDistance, yDistance);
-            }
-            catch(System.Exception exc)
-            {
-                System.Console.Error.WriteLine("Exception caught in pdfDocument.stempeln()");
-                System.Console.Error.WriteLine(exc);
-                return false;
-            }
+            scaleAllPages(scaleFactor);
+            addHeaderAndFooterToAllPages(headerText, footerText, headerX, footerX, fontName, fontSize, fontColor, forceVertical, forceHorizontal,
+                                            specificVerticalPages, specificHorizontalPages, xDistance, yDistance);
             System.Console.Error.WriteLine("pdfDocument finished stempeln");
             return true;
         }
 
-        public bool removeHeaderAndFooterFromAllPages()
+        public bool undoStempel()
         {
-            try
+            bool foundMarkedContent = false;
+            foreach(pdfPage page in pagesDict.Values)
             {
-                foreach(pdfPage page in pagesDict.Values)
-                {
-                    page.removeHeaderAndFooter();
-                }
+                if(page.removeHeaderAndFooter_new())
+                    foundMarkedContent = true;
             }
-            catch(System.Exception exc)
-            {
-                System.Console.Error.WriteLine("Exception caught in pdfDocument.removeHeaderAndFooterFromAllPages()");
-                System.Console.Error.WriteLine(exc);
-                return false;
-            }
-            return true;
+            return foundMarkedContent;
         }
 
 
@@ -66,7 +50,7 @@ namespace pdfParserByMH
 
         public void scaleAllPages(double scaleFactor = 1)
         {
-            string closingCommand = "\nQ"; //This Command shall be set at the end of every single page, 
+            string closingCommand = "\nQ\n"; //This Command shall be set at the end of every single page, 
             // it is the closing couter part to a scaling command (which may differ among pages) at the start of each page.
             //Below is the pdfObRef to a pdfStream which contains the closing command.
             //Instead of writing an extra copy of the closing command for every page, we just reference the same bwlow content stream at the end of every page.
@@ -80,7 +64,7 @@ namespace pdfParserByMH
             foreach(pdfPage page in pagesDict.Values)
             {
                 double[] mediaBox = page.mediaBox; //The keys are not mediaBox double[] arrays but tuples because tuples get compared by Value while double[] get compared by reference.
-                var mediaBoxTuple = (mediaBox[0], mediaBox[1], mediaBox[2], mediaBox[3]);
+                var mediaBoxTuple = new ValueTuple<double, double, double, double>(mediaBox[0], mediaBox[1], mediaBox[2], mediaBox[3]);
                 if(dict_MediaBoxToStreamObRef.ContainsKey(mediaBoxTuple)) //If the current page's media box is already known (from an earlier page)
                 {                                                         //use that earlier page's starting stream obRef for this page (i.e. adding it to the start of this page's content stream references)
                     startingStreamObRef = dict_MediaBoxToStreamObRef[mediaBoxTuple];
@@ -92,7 +76,7 @@ namespace pdfParserByMH
                     double ty = 0.5*(mediaBox[3] - mediaBox[1]);
                     double vx = tx*(1-scaleFactor);
                     double vy = ty*(1-scaleFactor);
-                    string scaleCommand = $"q {scaleFactor} 0 0 {scaleFactor} {vx} {vy} cm\n";
+                    string scaleCommand = string.Format("\n/HeaderAndFooterByMH BMC\nq {0} 0 0 {1} {2} {3} cm\nEMC\n", scaleFactor, scaleFactor, vx, vy);
 
                     startingStreamObRef = createNewStreamFromUncompressedData(Utils.stringToBytes(scaleCommand)); //... and pack that scaling command into a new starting stream
                     dict_MediaBoxToStreamObRef.Add(mediaBoxTuple, startingStreamObRef); //Add the new mediaBox and corresponding starting stream to the dictionary
@@ -103,14 +87,14 @@ namespace pdfParserByMH
         }
 
         public void addHeaderAndFooterToAllPages(string headerText, string footerText, PageXPosition headerX, PageXPosition footerX, string fontName, int fontSize, 
-                                                double[] fontColor, PageQuantifiers forceVertical = PageQuantifiers.None, PageQuantifiers forceHorizontal = PageQuantifiers.None, 
+                                                double[] fontColor, PageQuantifiers forceVertical = PageQuantifiers.Null, PageQuantifiers forceHorizontal = PageQuantifiers.Null, 
                                                 int[] specificVerticalPages = null, int[] specificHorizontalPages = null, int xDistance = 20, int yDistance = 20)
         {
             System.Collections.Generic.HashSet<int> setSpecificVerticalPages = new System.Collections.Generic.HashSet<int>();
             System.Collections.Generic.HashSet<int> setSpecificHorizontalPages = new System.Collections.Generic.HashSet<int>();
-            if(!(specificVerticalPages is null))
+            if(!(specificVerticalPages == null))
                 setSpecificVerticalPages = new System.Collections.Generic.HashSet<int>(specificVerticalPages);
-            if(!(specificHorizontalPages is null))
+            if(!(specificHorizontalPages == null))
                 setSpecificHorizontalPages = new System.Collections.Generic.HashSet<int>(specificHorizontalPages);
             string fontToken = "";
             pdfObjectReference fontObRef = null;
@@ -129,9 +113,6 @@ namespace pdfParserByMH
                 bool makeHorizontal = false;
                 switch (forceVertical)
                 {
-                    case PageQuantifiers.All:
-                        makeVertical = true;
-                        break;
                     case PageQuantifiers.AllExceptArray:
                         if(!setSpecificVerticalPages.Contains(num))
                             makeVertical = true;
@@ -145,9 +126,6 @@ namespace pdfParserByMH
                 }
                 switch (forceHorizontal)
                 {
-                    case PageQuantifiers.All:
-                        makeHorizontal = true;
-                        break;
                     case PageQuantifiers.AllExceptArray:
                         if(!setSpecificHorizontalPages.Contains(num))
                             makeHorizontal = true;

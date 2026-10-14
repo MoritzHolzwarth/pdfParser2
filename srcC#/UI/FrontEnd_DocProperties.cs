@@ -297,9 +297,11 @@ namespace pdfParserByMH
                 hasChanged = false;
                 return;
             }
+            txt = txt.Replace(',', '.');    //Note: the below check for non-numeric values does not account for the missconception between decimal point and decimal comma. 
+                                            //A number like 1,3 (which should probably be 1.3) would be treated as 13, which is even worse than rejecting it.
             double val;
             if(!double.TryParse(txt, out val))
-                throw new System.Exception("Error in DocScaleFactor.read(): non-numeric value :" + txt);
+                throw new System.Exception("Error in DocScaleFactor.read(): non-numeric value : " + txt);
             value = val;
             hasChanged = true;
         }

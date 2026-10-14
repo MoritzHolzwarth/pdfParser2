@@ -12,10 +12,15 @@ namespace pdfParserByMH
             DokuParamsForm = new Form();
             DokuParamsForm.StartPosition = FormStartPosition.CenterScreen;
             DokuParamsForm.Font = new Font("Arial", 12);
+            DokuParamsForm.Text = "Dokumentenparameter Anpassen";
             DokuParamsForm.AutoScaleMode = AutoScaleMode.Font;
             DokuParamsForm.Size = formSize;
             DokuParamsForm.BackColor = ColorTranslator.FromHtml("#E1F3F5");
             DokuParamsForm.AutoScroll = true;
+
+            DokuParamsPanel = new Panel();
+            DokuParamsForm.Controls.Add(DokuParamsPanel);
+            DokuParamsPanel.Size = new Size(800,1000);
 
             dictDocProperties = new Dictionary<DocPropertyType, DocProperty>();
             DokuParamsForm_makeFields();
@@ -24,18 +29,18 @@ namespace pdfParserByMH
         private void DokuParamsForm_makeFields()
         {
             dictDocProperties.Clear();
-            foreach(Control c in DokuParamsForm.Controls)
+            foreach(Control c in DokuParamsPanel.Controls)
                 c.Dispose();
-            DokuParamsForm.Controls.Clear();
+            DokuParamsPanel.Controls.Clear();
 
             int y = 10;
-            y = DokuParamsForm_makeFilePathControl(y);
-            y = DokuParamsForm_makeHeaderTextBoxControl(y + 10);
-            y = DokuParamsForm_makeFooterTextBoxControl(y + 10);
-            y = DokuParamsForm_makeVerticalPagesControl(y + 10);
-            y = DokuParamsForm_makeHorizontalPagesControl(y + 10);
-            y = DokuParamsForm_makePageScalingAndTextColorControl(y + 10);
-            y = DokuParamsForm_makeOKButtonControl(y + 10);
+            y = DokuParamsPanel_makeFilePathControl(y);
+            y = DokuParamsPanel_makeHeaderTextBoxControl(y + 10);
+            y = DokuParamsPanel_makeFooterTextBoxControl(y + 10);
+            y = DokuParamsPanel_makeVerticalPagesControl(y + 10);
+            y = DokuParamsPanel_makeHorizontalPagesControl(y + 10);
+            y = DokuParamsPanel_makePageScalingAndTextColorControl(y + 10);
+            y = DokuParamsPanel_makeOKButtonControl(y + 10);
         }
 
         private void DokuParamsForm_fillFields(DocData[] arrdocdata)
@@ -61,18 +66,18 @@ namespace pdfParserByMH
                 docprop.read();
         }
 
-        private int DokuParamsForm_makeFilePathControl(int y, DocData docdata = null)
+        private int DokuParamsPanel_makeFilePathControl(int y, DocData docdata = null)
         {
             int x = 40;
             Label folderTextBox_Label = new Label();
-            DokuParamsForm.Controls.Add(folderTextBox_Label);
+            DokuParamsPanel.Controls.Add(folderTextBox_Label);
             folderTextBox_Label.Location = new Point(x, y);
             folderTextBox_Label.Text = "Ordner";
             folderTextBox_Label.AutoSize = true;
 
             x += folderTextBox_Label.PreferredWidth + 100;
             Label fileTextBox_label = new Label();
-            DokuParamsForm.Controls.Add(fileTextBox_label);
+            DokuParamsPanel.Controls.Add(fileTextBox_label);
             fileTextBox_label.Location = new Point(x, y);
             fileTextBox_label.Text = "Dateiname mit Platzhalter * zum Finden der Datei";
             fileTextBox_label.AutoSize = true;
@@ -80,14 +85,14 @@ namespace pdfParserByMH
             y += folderTextBox_Label.Height + 10;
             x = 40;
             TextBox folderTextBox = new TextBox();
-            DokuParamsForm.Controls.Add(folderTextBox);
+            DokuParamsPanel.Controls.Add(folderTextBox);
             dictDocProperties[DocPropertyType.FolderName] = new DocFolderName(folderTextBox);
             folderTextBox.Location = new Point(x, y);
             folderTextBox.Size = new Size(100, 20);
 
             x += folderTextBox_Label.PreferredWidth + 100;
             TextBox fileTextBox = new TextBox();
-            DokuParamsForm.Controls.Add(fileTextBox);
+            DokuParamsPanel.Controls.Add(fileTextBox);
             dictDocProperties[DocPropertyType.ApproxFileName] = new DocFileApproxName(fileTextBox);
             fileTextBox.Location = new Point(x, y);
             fileTextBox.Size = new Size(500, 20);
@@ -96,18 +101,18 @@ namespace pdfParserByMH
             return y;
         }
 
-        private int DokuParamsForm_makeHeaderTextBoxControl(int y, DocData docdata = null)
+        private int DokuParamsPanel_makeHeaderTextBoxControl(int y, DocData docdata = null)
         {
             int x = 40;
             Label textbox_Header_Label = new Label();
-            DokuParamsForm.Controls.Add(textbox_Header_Label);
+            DokuParamsPanel.Controls.Add(textbox_Header_Label);
             textbox_Header_Label.Location = new Point(x, y);
             textbox_Header_Label.Text = "Kopfzeile";
             textbox_Header_Label.AutoSize = true;
 
             y += textbox_Header_Label.Height + 10;
             TextBox textbox_Header = new TextBox();
-            DokuParamsForm.Controls.Add(textbox_Header);
+            DokuParamsPanel.Controls.Add(textbox_Header);
             dictDocProperties[DocPropertyType.Header] = new DocHeader(textbox_Header);
             textbox_Header.Multiline = true;
             textbox_Header.AcceptsReturn = true;
@@ -118,7 +123,7 @@ namespace pdfParserByMH
 
             y += textbox_Header.Height + 10;
             GroupBox box_HeaderXPos = new System.Windows.Forms.GroupBox();
-            DokuParamsForm.Controls.Add(box_HeaderXPos);
+            DokuParamsPanel.Controls.Add(box_HeaderXPos);
             box_HeaderXPos.Text = "Kopfzeile Position";
             box_HeaderXPos.Location = new System.Drawing.Point(x, y);
             box_HeaderXPos.Size = new System.Drawing.Size(700, 60);
@@ -150,11 +155,11 @@ namespace pdfParserByMH
             return y;
         }
 
-        private int DokuParamsForm_makeFooterTextBoxControl(int y, DocData docdata = null)
+        private int DokuParamsPanel_makeFooterTextBoxControl(int y, DocData docdata = null)
         {
             int x = 40;
             Label textbox_Footer_Label = new Label();
-            DokuParamsForm.Controls.Add(textbox_Footer_Label);
+            DokuParamsPanel.Controls.Add(textbox_Footer_Label);
             textbox_Footer_Label.Location = new Point(x, y);
             textbox_Footer_Label.Text = "Fußzeile";
             textbox_Footer_Label.AutoSize = true;
@@ -162,7 +167,7 @@ namespace pdfParserByMH
 
             y += textbox_Footer_Label.Height + 10;
             TextBox textbox_Footer = new TextBox();
-            DokuParamsForm.Controls.Add(textbox_Footer);
+            DokuParamsPanel.Controls.Add(textbox_Footer);
             dictDocProperties[DocPropertyType.Footer] = new DocFooter(textbox_Footer);
             textbox_Footer.Multiline = true;
             textbox_Footer.AcceptsReturn = true;
@@ -174,7 +179,7 @@ namespace pdfParserByMH
 
             y += textbox_Footer.Height + 10;
             GroupBox box_FooterXPos = new GroupBox();
-            DokuParamsForm.Controls.Add(box_FooterXPos);
+            DokuParamsPanel.Controls.Add(box_FooterXPos);
             box_FooterXPos.Text = "Fußzeile Position";
             box_FooterXPos.Location = new Point(x, y);
             box_FooterXPos.Size = new Size(700, 60);
@@ -204,11 +209,11 @@ namespace pdfParserByMH
             return y;
         }
 
-        private int DokuParamsForm_makeVerticalPagesControl(int y, DocData docdata = null)
+        private int DokuParamsPanel_makeVerticalPagesControl(int y, DocData docdata = null)
         {
             int x = 40;
             GroupBox groupbox_vertical = new GroupBox();
-            DokuParamsForm.Controls.Add(groupbox_vertical);
+            DokuParamsPanel.Controls.Add(groupbox_vertical);
             groupbox_vertical.Text = "Seiten vertikal machen:";
             groupbox_vertical.Location = new Point(x, y);
             groupbox_vertical.Size = new Size(700,110);
@@ -251,11 +256,11 @@ namespace pdfParserByMH
             return y;
         }
 
-        private int DokuParamsForm_makeHorizontalPagesControl(int y, DocData docdata = null)
+        private int DokuParamsPanel_makeHorizontalPagesControl(int y, DocData docdata = null)
         {
             int x = 40;
             GroupBox groupbox_horizontal = new GroupBox();
-            DokuParamsForm.Controls.Add(groupbox_horizontal);
+            DokuParamsPanel.Controls.Add(groupbox_horizontal);
             groupbox_horizontal.Text = "Seiten horizontal machen:";
             groupbox_horizontal.Location = new Point(x, y);
             groupbox_horizontal.Size = new Size(700,110);
@@ -297,32 +302,32 @@ namespace pdfParserByMH
             return y;
         }
 
-        private int DokuParamsForm_makePageScalingAndTextColorControl(int y, DocData docdata = null)
+        private int DokuParamsPanel_makePageScalingAndTextColorControl(int y, DocData docdata = null)
         {
             int x = 40;
             Label scalierung_Label = new Label();
-            DokuParamsForm.Controls.Add(scalierung_Label);
+            DokuParamsPanel.Controls.Add(scalierung_Label);
             scalierung_Label.Location = new Point(x, y);
             scalierung_Label.Text = "Seitenskalierung Faktor:";
             scalierung_Label.AutoSize = true;
             x += scalierung_Label.Width + 5;
 
             TextBox textbox_Scalierung = new TextBox();
-            DokuParamsForm.Controls.Add(textbox_Scalierung);
+            DokuParamsPanel.Controls.Add(textbox_Scalierung);
             dictDocProperties[DocPropertyType.ScaleFactor] = new DocScaleFactor(textbox_Scalierung);
             textbox_Scalierung.Location = new Point(x, y);
             textbox_Scalierung.Size = new Size(100,20);
             x += textbox_Scalierung.Width + 100;
             
             Label colorLabel = new Label();
-            DokuParamsForm.Controls.Add(colorLabel);
+            DokuParamsPanel.Controls.Add(colorLabel);
             colorLabel.Location = new Point(x, y);
             colorLabel.Text = "Textfarbe:";
             colorLabel.AutoSize = true;
             x += colorLabel.Width + 5;
 
             Label colorName = new Label();
-            DokuParamsForm.Controls.Add(colorName);
+            DokuParamsPanel.Controls.Add(colorName);
             dictDocProperties[DocPropertyType.TextColor] = new DocTextColor(colorName);
             colorName.Location = new Point(x, y);
             colorName.AutoSize = true;
@@ -331,7 +336,7 @@ namespace pdfParserByMH
             x += colorName.Width + 5;
 
             Button colorButton = new Button();
-            DokuParamsForm.Controls.Add(colorButton);
+            DokuParamsPanel.Controls.Add(colorButton);
             colorButton.Location = new Point(x, y);
             colorButton.Size = new Size(100,50);
             colorButton.Text = "Farbe Wählen";
@@ -357,11 +362,11 @@ namespace pdfParserByMH
             return y;
         }
 
-        private int DokuParamsForm_makeOKButtonControl(int y)
+        private int DokuParamsPanel_makeOKButtonControl(int y)
         {
             int x = 350;
             Button okButton = new Button();
-            DokuParamsForm.Controls.Add(okButton);
+            DokuParamsPanel.Controls.Add(okButton);
             okButton.Location = new System.Drawing.Point(x, y);
             okButton.Size = new System.Drawing.Size(100,50);
             okButton.Text = "Speichern";

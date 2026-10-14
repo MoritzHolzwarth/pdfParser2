@@ -1,5 +1,6 @@
-using System.Data;
+﻿using System.Data;
 using System.Dynamic;
+using System;
 
 namespace pdfParserByMH
 {
@@ -28,23 +29,14 @@ namespace pdfParserByMH
 
         public bool setFilePath(string inputPath)
         {
-            try
-            {
-                System.Console.Error.WriteLine("pdfDocument started parsing");
-                pdfParser parser = new pdfParser(inputPath); //All the Parsing happens via the Constructor of the pdfParser class
-                System.Console.Error.WriteLine("pdfDocument finished parsing");
-                xref = parser.xrefCol;                      //Retrieve the xref-Collection, the root ObRef, and info obRef from the pdfParser.
-                rootObRef = parser.rootObRef;               
-                infoObRef = parser.infoObRef;
-                createPagesDict();
-                numPages = pagesDict.Count;
-            }
-            catch(System.Exception exc)
-            {
-                System.Console.Error.WriteLine("Exception caught in pdfDocument.setFilePath()");
-                System.Console.Error.WriteLine(exc);
-                return false;
-            }
+            System.Console.Error.WriteLine("pdfDocument started parsing");
+            pdfParser parser = new pdfParser(inputPath); //All the Parsing happens via the Constructor of the pdfParser class
+            System.Console.Error.WriteLine("pdfDocument finished parsing");
+            xref = parser.xrefCol;                      //Retrieve the xref-Collection, the root ObRef, and info obRef from the pdfParser.
+            rootObRef = parser.rootObRef;               
+            infoObRef = parser.infoObRef;
+            createPagesDict();
+            numPages = pagesDict.Count;
             return true;
         }
 
@@ -52,6 +44,21 @@ namespace pdfParserByMH
         {
             outputPath = path;
             return true;
+        }
+
+        public void printData()     // Only used for Debugging
+        {
+            if(pagesDict == null)
+                return;
+            
+            foreach(pdfPage page in pagesDict.Values)
+            {
+                Console.WriteLine(string.Format("Page Nr {0}\nMedia Box:", page.number.ToString()));
+                double[] mediaBox = page.mediaBox;
+                Console.WriteLine(string.Format("x0 {0}; y0 {1}; w {2}; h {3}", mediaBox[0].ToString(), mediaBox[1].ToString(), mediaBox[2].ToString(), mediaBox[3].ToString()));
+                Console.WriteLine("Rotation State:");
+                Console.WriteLine(string.Format("{0}", page.rotateState.value.ToString()));
+            }
         }
 
         private void createPagesDict()
@@ -81,15 +88,17 @@ namespace pdfParserByMH
                     if(!dict.containsKey("/Kids"))
                         throw new System.Exception("Error in pdfDocument.createPagesDict(): /Pages object has no /Kids!");
                     pdfEntity kidsEntity = dict.getResolved("/Kids");
-                    if(kidsEntity is pdfArray arrKids)
+                    if(kidsEntity is pdfArray)
                     {
+                        pdfArray arrKids = (pdfArray)kidsEntity;
                         for(int i=0; i<arrKids.count(); i++)
                         {
                             queue.Enqueue((pdfDictionary)arrKids.getResolved(i));
                         }
                     }
-                    else if(kidsEntity is pdfDictionary dictKid)
+                    else if(kidsEntity is pdfDictionary)
                     {
+                        pdfDictionary dictKid = (pdfDictionary)kidsEntity;
                         queue.Enqueue(dictKid);
                     }
                     else

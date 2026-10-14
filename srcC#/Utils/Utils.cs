@@ -1,14 +1,19 @@
-using System.Linq;
+﻿using System.Linq;
 using System.Net;
 
 namespace pdfParserByMH
 {
-    public enum PageXPosition {Left, Middle, Right}
-    public enum PageQuantifiers {None, All, NoneExceptArray, AllExceptArray}
+    public enum PageXPosition {Left, Middle, Right, Null}
+    public enum PageQuantifiers {NoneExceptArray, AllExceptArray, Null}
     public partial class Utils
     {
         public Utils()
         {}
+
+        static public int modulo(int n, int m)
+        {
+            return ((n % m) + m) % m;
+        }
 
         static public byte[] stringToBytes(string str)
         {
@@ -67,7 +72,8 @@ namespace pdfParserByMH
                 case 4:
                     return ((long)chunk[0] << 24) + ((long)chunk[1] << 16) + ((long)chunk[2] << 8) + (long)chunk[3];
                 default:
-                    throw new System.Exception($"Error in bytesToBigEndianInteger(): Invalid Width {width}");
+                    //throw new System.Exception($"Error in bytesToBigEndianInteger(): Invalid Width {width}"); > C# 5
+                    throw new System.Exception(string.Format("Error in bytesToBigEndianInteger(): Invalid Width {0}", 0));
             }
         }
 
@@ -84,7 +90,8 @@ namespace pdfParserByMH
                 case 4:
                     return ((long)chunk[0] << 24) + ((long)chunk[1] << 16) + ((long)chunk[2] << 8) + (long)chunk[3];
                 default:
-                    throw new System.Exception($"Error in bytesToBigEndianInteger(): Invalid Width {width}");
+                    //throw new System.Exception($"Error in bytesToBigEndianInteger(): Invalid Width {width}"); > C# 5
+                    throw new System.Exception(string.Format("Error in bytesToBigEndianInteger(): Invalid Width {0}", width));
             }
         }
 

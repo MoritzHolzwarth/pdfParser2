@@ -1,15 +1,20 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType>winexe</OutputType>
     <TargetFramework>net472</TargetFramework>
     <ImplicitUsings>false</ImplicitUsings>
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>pdfParser2</AssemblyName>
+    <LangVersion>5</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <EmbeddedResource Include = "fontData\*.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include = "System.Web.Extensions" />
   </ItemGroup>
 
 </Project>

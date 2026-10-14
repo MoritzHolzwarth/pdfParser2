@@ -10,9 +10,9 @@ namespace pdfParserByMH
     public partial class FrontEndProgram
     {
 
-        private void saveData(saveAll = false)
+        private void saveData()
         {
-            if(!saveAll && !anytingHasChanged)
+            if(!anytingHasChanged)
                 return;
             if(!Directory.Exists(savedContentsFolderPath))
                 Directory.CreateDirectory(savedContentsFolderPath);
@@ -21,7 +21,7 @@ namespace pdfParserByMH
             {
                 DocData docdata = dictDocs[docname];
                 string filepath = Path.Combine(savedContentsFolderPath, docname + ".json");
-                if(!saveAll && File.Exists(filepath) && !docdata.contentHasChanged)
+                if(File.Exists(filepath) && !docdata.contentHasChanged)
                     continue;
                 Dictionary<DocPropertyType, object> dictProps = docdata.dictDocProperties;
                 Dictionary<string,string> dictToSaveProps = new Dictionary<string, string>(dictProps.Count);
@@ -64,6 +64,12 @@ namespace pdfParserByMH
                     dictProps[proptype] = getDocPropertyValueFromSavedText(proptype, txtval);
                 }
             }
+        }
+
+        private void delete_old_saveFolder()
+        {
+            if(Directory.Exists(savedContentsFolderPath))
+                Directory.Delete(savedContentsFolderPath, true); //Delete Folder with all contents
         }
 
         private string getSaveTextFromDocPropertyValue(DocPropertyType proptype, object val)

@@ -1,4 +1,4 @@
-using System.CodeDom;
+﻿using System.CodeDom;
 using System.Data.Common;
 using System.Resources;
 
@@ -22,7 +22,7 @@ namespace pdfParserByMH
             return realNum;
         }
 
-        static public pdfName readPDFName(ref ByteSpan span)
+        static public pdfName readPDFName(ref ByteSpan span, bool skipTrailingWhiteSpaces = true)
         {
             skipPDFComment(ref span);
             if(!(span[0] == '/'))
@@ -30,14 +30,15 @@ namespace pdfParserByMH
             byte[] forbiddenChars = {(byte)'/', (byte)'\\', (byte)'(', (byte)')', (byte)'[', (byte)']', (byte)'{', (byte)'}', (byte)'<', (byte)'>', (byte)'%'};
             int i = 1;
             byte b = span[i];
-            while( System.Array.IndexOf(forbiddenChars, b) < 0 && !byteIsASCIIWhitheSpace(b) && i < span.Length && i < span.Length-1)
+            while( System.Array.IndexOf(forbiddenChars, b) < 0 && !byteIsASCIIWhitheSpace(b) && i < span.Length-1)
             {
                 i++;
                 b = span[i];
             }
             pdfName name = new pdfName(Utils.bytesToString(span.Slice(0,i)));
             span = span.Slice(i);
-            skipASCIIWhiteSpaces(ref span);
+            if(skipTrailingWhiteSpaces)
+                skipASCIIWhiteSpaces(ref span);
             return name;
         }
 
@@ -144,11 +145,30 @@ namespace pdfParserByMH
             //using Latin1 Encoding, because the span may be much longer than the pdfString and contain non-ASCII bytes
             string spanString = System.Text.Encoding.GetEncoding("iso-8859-1").GetString(span.ToArray()); 
             //The regex checks after the pdfString (after its closing ')'), if there comes another ')' without a '(' or 'endobj' or 'stream' before it.
+            //(if there comes an 'endobj' before the next ')', that is fine because it means that this misterious next ')' does (most likely) not belong to the current object and cannto hurt our string's integrity.
+            //Similarly, if there comes a 'stream' before the next ')', that is fine because it means that this misterious next ')' does (most likely) belong to a stream-data and cannot hurt our string's integrity.)
             //This can only be the case if the pdfString's assumed closing ')' was not actually a closing token but part of the pdfString's content.
             //Hence it would mean that the pdfString was not correctly parsed.
             System.Text.RegularExpressions.Regex reg = new System.Text.RegularExpressions.Regex(@"^((?!(endobj|stream|\())[\s\S])*\)",System.Text.RegularExpressions.RegexOptions.Compiled);
             return !reg.IsMatch(spanString);
         }
+
+        // static public bool checkBehindPDFString2(ByteSpan span)
+        // {
+        //     if(span.Length == 0)
+        //     {
+        //         return true;
+        //     }
+        //     //using Latin1 Encoding, because the span may be much longer than the pdfString and contain non-ASCII bytes
+        //     string spanString = System.Text.Encoding.GetEncoding("iso-8859-1").GetString(span.ToArray()); 
+        //     //The regex checks after the pdfString (after its closing ')'), if there comes another ')' without a '(' or 'endobj' or 'stream' before it.
+        //     //(if there comes an 'endobj' before the next ')', that is fine because it means that this misterious next ')' does (most likely) not belong to the current object and cannto hurt our string's integrity.
+        //     //Similarly, if there comes a 'stream' before the next ')', that is fine because it means that this misterious next ')' does (most likely) belong to a stream-data and cannot hurt our string's integrity.)
+        //     //This can only be the case if the pdfString's assumed closing ')' was not actually a closing token but part of the pdfString's content.
+        //     //Hence it would mean that the pdfString was not correctly parsed.
+        //     System.Text.RegularExpressions.Regex reg = new System.Text.RegularExpressions.Regex(@"^((?!(endobj|stream|\())[\s\S])*\)",System.Text.RegularExpressions.RegexOptions.Compiled);
+        //     return !reg.IsMatch(spanString);
+        // }
 
         static public pdfHexString readPDFHexString(ref ByteSpan span)
         {
@@ -256,7 +276,8 @@ namespace pdfParserByMH
                     val = readPDFEntity(ref span);
                     if(pdfdict.containsKey(key.value))
                     {
-                        System.Console.Error.WriteLine($"Warning in Utils.readPDFDictionary(): Multiple entries with key {key.value} found! Using only the last one.");
+                        //System.Console.Error.WriteLine($"Warning in Utils.readPDFDictionary(): Multiple entries with key {key.value} found! Using only the last one."); > C# 5
+                        System.Console.Error.WriteLine(string.Format("Warning in Utils.readPDFDictionary(): Multiple entries with key {0} found! Using only the last one.", key.value));
                         pdfdict.set(key.value,val);
                     }
                     else
@@ -285,8 +306,9 @@ namespace pdfParserByMH
             }
             span = span.Slice(6); //move past 'stream' keyword
             int dataLen;
-            if(dict.get("/Length") is pdfInteger lenPDFInt)
+            if(dict.get("/Length") is pdfInteger)
             {
+                pdfInteger lenPDFInt = (pdfInteger)dict.get("/Length");
                 dataLen = lenPDFInt.value;
             }
             else if(xref != null)
@@ -298,8 +320,10 @@ namespace pdfParserByMH
             byte[] data = System.Array.Empty<byte>();
             byte[][] possibleBytesBeforeAndAfterData =
             {
-                new byte[] {0x0A}, new byte[] {0x0D, 0x0A}, new byte[] {0x0D}, new byte[] {}
+                new byte[] {0x0A}, new byte[] {0x0D, 0x0A}, new byte[] {0x0D} //only these are allowed by official pdf specification
             };
+            byte[] leadingDelimiter = null;
+            byte[] trailingDelimiter = null;
             bool success = false;
             foreach(byte[] bytesBeforeStream in possibleBytesBeforeAndAfterData)
             {
@@ -307,26 +331,28 @@ namespace pdfParserByMH
                 {
                     if(readStreamDataWithGivenLeadingAndTrailingBytes(ref span, ref data, dataLen, bytesBeforeStream, bytesAfterStream))
                     {
+                        leadingDelimiter = bytesBeforeStream;
+                        trailingDelimiter = bytesAfterStream;
                         success = true;
                         break; //break out of inner for loop
                     }
                 }
                 if(success)
-                    break; //break out of scnd for loop
+                    break; //break out of second for loop
             }
-            if(!success)
-            {
-                System.Console.Error.WriteLine("Warning in Utils.readPDFStreamOrDict(): No proper stream wrapping found. Starting Trouble Shooting.");
-                troubleShootStreamData1(ref span, ref data, dataLen);
-            }
-            return new pdfStream(dict, data);
+            if(success)
+                return new pdfStream(dict, data, leadingDelimiter, trailingDelimiter);
+            
+            System.Console.Error.WriteLine("Warning in Utils.readPDFStreamOrDict(): No spec-complient stream delimiters found. Starting Trouble Shooting with arbitrary White Space delimiters.");
+            troubleShootStreamData1(ref span, ref data, dataLen, ref leadingDelimiter, ref trailingDelimiter);
+            return new pdfStream(dict, data, leadingDelimiter, trailingDelimiter);
         }
 
         static private bool readStreamDataWithGivenLeadingAndTrailingBytes(ref ByteSpan span, ref byte[] data, int dataLen, byte[] bytesBeforeStream, byte[] bytesAfterStream)
         {
             int numBytesBefore = bytesBeforeStream.Length;
             int numBytesAfter = bytesAfterStream.Length;
-            int extraStreamLen = numBytesBefore+dataLen+numBytesAfter;
+            int extraStreamLen = numBytesBefore + dataLen + numBytesAfter;
             if(extraStreamLen > span.Length)
             {
                 return false;
@@ -335,8 +361,8 @@ namespace pdfParserByMH
             {
                 return false;
             }
-            bool beforeStreamValid = (numBytesBefore == 0)? true: span.Slice(0,numBytesBefore).SequenceEqual(bytesBeforeStream);
-            bool afterStreamValid = (numBytesAfter == 0)? true: span.Slice(numBytesBefore+dataLen,numBytesAfter).SequenceEqual(bytesAfterStream);
+            bool beforeStreamValid = (numBytesBefore == 0)? true: span.Slice(0, numBytesBefore).SequenceEqual(bytesBeforeStream);
+            bool afterStreamValid = (numBytesAfter == 0)? true: span.Slice(numBytesBefore + dataLen, numBytesAfter).SequenceEqual(bytesAfterStream);
             if(!(beforeStreamValid && afterStreamValid))
             {
                 return false;
@@ -346,36 +372,27 @@ namespace pdfParserByMH
             return true;
         }
 
-        static private void troubleShootStreamData1(ref ByteSpan span, ref byte[] data, int dataLen)
+        static private void troubleShootStreamData1(ref ByteSpan span, ref byte[] data, int dataLen, ref byte[] leadingDelimiter, ref byte[] trailingDelimiter)
         {
             //check if behind white space + dataLen + white space, the endstream token is present
-            skipASCIIWhiteSpaces(ref span);  
-            ByteSpan span1 = span;
+            leadingDelimiter = skipAndReturnASCIIWhiteSpaces(ref span);      
             if(dataLen > span.Length)
             {
-                System.Console.Error.WriteLine("Warning in Utils.troubleShootStreamData1(): no 'endstream' token found after byte range of size /Length.");
-                System.Console.Error.WriteLine("Trying shorter byte ranges now.");
-                troubleShootStreamData2(ref span, ref data, dataLen);
-                return;
+                throw new System.Exception("Error in Utils.troubleShootStreamData1(): given data /Length goes beyond pdf size!");
             }
-            span1 = span1.Slice(dataLen);
-            skipASCIIWhiteSpaces(ref span1);
-            if(spanStartsWithGivenText(span1,"endstream"))
-            {          
-                data = span.Slice(0,dataLen).ToArray();
-                span = span.Slice(dataLen);
-                skipASCIIWhiteSpaces(ref span);
-                span = span.Slice(9); //move past "endstream" token
-                return;
+            data = span.Slice(0,dataLen).ToArray(); //Already retrieve data, even if not yet clear whether stream is valid
+            span = span.Slice(dataLen);             //Move past data
+            trailingDelimiter = skipAndReturnASCIIWhiteSpaces(ref span);
+            if(!spanStartsWithGivenText(span,"endstream")) //Final check if stream is valid
+            {   
+                throw new System.Exception("Error in Utils.troubleShootStreamData1(): no 'endstream' token found after byte range of size /Length + White Space!");
             }
-            System.Console.Error.WriteLine("Warning in Utils.troubleShootStreamData1(): no 'endstream' token found after byte range of size /Length.");
-            System.Console.Error.WriteLine("Trying shorter byte ranges now.");
-            troubleShootStreamData2(ref span, ref data, dataLen);
+            span = span.Slice(9); //move past "endstream" token
         }
 
         static private void troubleShootStreamData2(ref ByteSpan span, ref byte[] data, int dataLen)
         {
-            //check if within dataLen reach the "endstream" token appears
+            //check if within dataLen reach the "endstream" token appears. Very risky trouble shooting.
             skipASCIIWhiteSpaces(ref span);  
             ByteSpan span1 = span;
             int i = 0;

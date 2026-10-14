@@ -3,9 +3,12 @@
     public sealed partial class pdfParser
     //The 'sealed' keyword means that this class cannot inherit to other classes
     {
-        public string filePath {get;}
-        public byte[] arrAllBytes {get;}
-        public int numAllBytes {get;}
+        //public string filePath {get;} > C# 5
+        public string filePath {get; private set;}
+        //public byte[] arrAllBytes {get;} > C# 5
+        public byte[] arrAllBytes {get; private set;}
+        //public int numAllBytes {get;} > C# 5
+        public int numAllBytes {get; private set;}
         public pdfObjectReference rootObRef {get; private set;}
         public pdfObjectReference infoObRef {get; private set;}
         private xrefTable xrefTab;

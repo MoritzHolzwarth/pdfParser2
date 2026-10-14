@@ -8,17 +8,17 @@ using System.Windows.Forms;
 
 namespace pdfParserByMH
 {
-    enum ProgramState {DoAllDoku, DoSingelPDF, AdjustDokuParams, Null}
+    enum ProgramState {DoAllDoku, DoSingelPDF, UndoStempel, AdjustDokuParams, Null}
     public partial class FrontEndProgram
     {
         Form form;
+        Form DokuParamsForm;
+        Panel DokuParamsPanel;
         Size formSize;
         TabControl tabControl;
         ProgramState progState = ProgramState.Null;
         TabPage AllDokuForm;
         TabPage SinglePDFForm;
-        Form DokuParamsForm;
-        bool anytingHasChanged = false;
         pdfDocument doc;
         string dokuFolderPath = "";
         string uploadFolderApproxName = "1_Upload NWL_Rev.*";
@@ -30,13 +30,14 @@ namespace pdfParserByMH
         string DokuRev_placeholder = "{dokurev}";
         string ADBRev_placeholder = "{adbrev}";
         string savedContentsFolderPath;
-        System.Web.Script.Serialization.JavaScriptSerializer jsSerializer;
         Dictionary<string, DocData> dictDocs;
         Dictionary<string, CheckBox> dictDocCheckboxes;
+        bool anytingHasChanged = false;
         bool overrideDokuFiles = false;
         bool overrideSinglePDF = false;
         Dictionary<DocPropertyType,DocProperty> dictDocProperties;  //This is for Doku-Documents
         Dictionary<DocPropertyType,DocProperty> dictSinglePDFProperties; //This is for the Single PDF editing
+        System.Web.Script.Serialization.JavaScriptSerializer jsSerializer;
         public FrontEndProgram()
         {
             savedContentsFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), 
@@ -58,16 +59,17 @@ namespace pdfParserByMH
 
             tabControl = new TabControl();
             form.Controls.Add(tabControl);
-            tabControl.Size = formSize;
+            tabControl.Size = new Size(800,1000);
             
             makeDictDocs();
-            loadData();
+            delete_old_saveFolder();
+            //loadData();
 
             makeAllDokuForm();
 
             makeSingelPDFForm();  
 
-            makeDokuParamsForm();     
+            //makeDokuParamsForm();     
         }
 
         public void run()
@@ -83,6 +85,9 @@ namespace pdfParserByMH
                     case ProgramState.DoSingelPDF:
                         singlePDFStempeln();
                         break;
+                    case ProgramState.UndoStempel:
+                        undoStempel();
+                        break;
                     case ProgramState.AdjustDokuParams:
                         adjustDokuParams();
                         break;
@@ -92,7 +97,7 @@ namespace pdfParserByMH
                 progState = ProgramState.Null; //reset Program State after execution, to be set again by next Form Dialog.
                 result = form.ShowDialog();
             }
-            saveData();
+            //saveData();
         }
 
     }
