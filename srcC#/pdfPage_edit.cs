@@ -323,6 +323,8 @@ namespace pdfParserByMH
                 return false;
             }
             var matches = reg.Matches(fullPageCode);
+
+            bool foundMarkedContent = false;
             
             foreach(System.Text.RegularExpressions.Match match in matches)
             {
@@ -334,6 +336,10 @@ namespace pdfParserByMH
                 {
                     Console.Error.WriteLine("Note in pdfPage.removeHeaderAndFooter(): found seemingly marked Content that didn't validate!");
                     continue;
+                }
+                else
+                {
+                    foundMarkedContent = true;
                 }
                 int posBehindMarkedCont_global = markedContStartPos_global + lenMarkedContent + 1; //position behind marekd content in contiguous stream data
 
@@ -371,7 +377,6 @@ namespace pdfParserByMH
                     System.Array.Copy(markedStreamData,0,newStreamData,0,lenBeforeMarkedContent);       //copy the data before marked content from the original stream data to new stream data.
                     System.Array.Copy(markedStreamData,posBehindMarkedCont_local,newStreamData,lenBeforeMarkedContent,lenBehindMarkedContent);  //copy the data behind the marked content from otiginal stream data to new stream data
                     lstContents[startStreamIndex].setNewData(newStreamData);    //simply replace the old stream data (with marked content) with the new stream data (without marked content)
-                    return true;
                 }
                 else
                 {
@@ -390,7 +395,7 @@ namespace pdfParserByMH
                 }
 
             }
-            return true;
+            return foundMarkedContent;
         }
 
         public bool removeHeaderAndFooter()  //Never used this Function so far. Dont know if it works correctly

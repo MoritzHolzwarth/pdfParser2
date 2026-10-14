@@ -374,20 +374,33 @@ namespace pdfParserByMH
 
         private int SinglePDFForm_makeStempelnButtonControl(int y)
         {
-            int x = 350;
-            Button okButton = new Button();
-            SinglePDFForm.Controls.Add(okButton);
-            okButton.Location = new System.Drawing.Point(x, y);
-            okButton.Size = new System.Drawing.Size(100,50);
-            okButton.Text = "Stempeln";
-            okButton.BackColor = System.Drawing.ColorTranslator.FromHtml("#C2EAF0");
-            okButton.Click += (sender, e) =>
+            int x = 150;
+            Button stempelButton = new Button();
+            SinglePDFForm.Controls.Add(stempelButton);
+            stempelButton.Location = new System.Drawing.Point(x, y);
+            stempelButton.Size = new System.Drawing.Size(100,50);
+            stempelButton.Text = "Stempeln";
+            stempelButton.BackColor = System.Drawing.ColorTranslator.FromHtml("#C2EAF0");
+            stempelButton.Click += (sender, e) =>
             {
                 form.DialogResult = DialogResult.OK;
                 progState = ProgramState.DoSingelPDF;
                 form.Close();
             };
-            y += okButton.Size.Height;
+            x += stempelButton.Size.Width + 100;
+            Button undoStempelButton = new Button();
+            SinglePDFForm.Controls.Add(undoStempelButton);
+            undoStempelButton.Location = new Point(x, y);
+            undoStempelButton.Size = new Size(100,50);
+            undoStempelButton.Text = "Stempel entfernen";
+            undoStempelButton.BackColor = ColorTranslator.FromHtml("#C2EAF0");
+            undoStempelButton.Click += (sender, e) =>
+            {
+                form.DialogResult = DialogResult.OK;
+                progState = ProgramState.UndoStempel;
+                form.Close();
+            };
+            y += undoStempelButton.Size.Height;
             return y;
         }
 
@@ -397,9 +410,13 @@ namespace pdfParserByMH
             System.Windows.Forms.Label tipps_Label = new Label();
             SinglePDFForm.Controls.Add(tipps_Label);
             tipps_Label.Location = new System.Drawing.Point(x, y);
-            tipps_Label.Text = "Hinweis: Die Nummer einzelner Seiten, sowie die Anzahl aller Seiten,\r\nkönnen durch die Variablen {pagenum}, bzw. {pagecount} genannt werden.";
+            tipps_Label.Text = "Hinweis: Die Nummer einzelner Seiten, sowie die Anzahl aller Seiten, " +
+                                "\r\nkönnen durch die Variablen {pagenum}, bzw. {pagecount} genannt werden." + 
+                                "\r\n\r\nHinweis: Bei 'Stempel entfernen' werden nur die Kopf- und Fußzeile, sowie die Skalierung,\n\r" +
+                                "die von vorherigem Stempeln stammen, entfernt, bzw. aufgehoben.\n\r" + 
+                                "Die Seitenorientierung wird nicht geändert. Eingegebene Parameter werden ignoriert.";
             tipps_Label.AutoSize = true;
-            y += tipps_Label.Height;
+            y += tipps_Label.Height + 10;
             return y;
         }
     }

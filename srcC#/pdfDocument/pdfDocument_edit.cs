@@ -19,22 +19,15 @@ namespace pdfParserByMH
             return true;
         }
 
-        public bool removeHeaderAndFooterFromAllPages()
+        public bool undoStempel()
         {
-            try
+            bool foundMarkedContent = false;
+            foreach(pdfPage page in pagesDict.Values)
             {
-                foreach(pdfPage page in pagesDict.Values)
-                {
-                    page.removeHeaderAndFooter();
-                }
+                if(page.removeHeaderAndFooter_new())
+                    foundMarkedContent = true;
             }
-            catch(System.Exception exc)
-            {
-                System.Console.Error.WriteLine("Exception caught in pdfDocument.removeHeaderAndFooterFromAllPages()");
-                System.Console.Error.WriteLine(exc);
-                return false;
-            }
-            return true;
+            return foundMarkedContent;
         }
 
 
@@ -57,7 +50,7 @@ namespace pdfParserByMH
 
         public void scaleAllPages(double scaleFactor = 1)
         {
-            string closingCommand = "\nQ"; //This Command shall be set at the end of every single page, 
+            string closingCommand = "\nQ\n"; //This Command shall be set at the end of every single page, 
             // it is the closing couter part to a scaling command (which may differ among pages) at the start of each page.
             //Below is the pdfObRef to a pdfStream which contains the closing command.
             //Instead of writing an extra copy of the closing command for every page, we just reference the same bwlow content stream at the end of every page.
@@ -83,8 +76,7 @@ namespace pdfParserByMH
                     double ty = 0.5*(mediaBox[3] - mediaBox[1]);
                     double vx = tx*(1-scaleFactor);
                     double vy = ty*(1-scaleFactor);
-                    //string scaleCommand = $"q {scaleFactor} 0 0 {scaleFactor} {vx} {vy} cm\n";
-                    string scaleCommand = string.Format("q {0} 0 0 {1} {2} {3} cm\n", scaleFactor, scaleFactor, vx, vy);
+                    string scaleCommand = string.Format("\n/HeaderAndFooterByMH BMC\nq {0} 0 0 {1} {2} {3} cm\nEMC\n", scaleFactor, scaleFactor, vx, vy);
 
                     startingStreamObRef = createNewStreamFromUncompressedData(Utils.stringToBytes(scaleCommand)); //... and pack that scaling command into a new starting stream
                     dict_MediaBoxToStreamObRef.Add(mediaBoxTuple, startingStreamObRef); //Add the new mediaBox and corresponding starting stream to the dictionary
