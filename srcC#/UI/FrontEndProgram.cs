@@ -8,7 +8,7 @@ using System.Windows.Forms;
 
 namespace pdfParserByMH
 {
-    enum ProgramState {DoAllDoku, DoSingelPDF, UndoStempel, AdjustDokuParams, Null}
+    enum ProgramState {DoAllDoku, DoSingelPDF, UndoStempel, WriteDecompressed, AdjustDokuParams, Null}
     public partial class FrontEndProgram
     {
         Form form;
@@ -87,6 +87,9 @@ namespace pdfParserByMH
                         break;
                     case ProgramState.UndoStempel:
                         undoStempel();
+                        break;
+                    case ProgramState.WriteDecompressed:
+                        writeDecompressed();
                         break;
                     case ProgramState.AdjustDokuParams:
                         adjustDokuParams();

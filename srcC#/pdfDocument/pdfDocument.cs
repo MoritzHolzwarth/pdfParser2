@@ -1,12 +1,14 @@
 ﻿using System.Data;
 using System.Dynamic;
 using System;
+using System.Collections.ObjectModel;
 
 namespace pdfParserByMH
 {
     public sealed partial class pdfDocument
     {
         private string outputPath = null;
+        private string inputPath = null;
         public xrefCollection xref {get; private set;}
         private pdfObjectReference rootObRef;
         private pdfObjectReference infoObRef;
@@ -14,21 +16,24 @@ namespace pdfParserByMH
                                                                               //The Page Numbering starts with 1.
         public int numPages {get; private set;}
         public FontData fontData {get; set;}
+        public System.Collections.Generic.HashSet<pdfStream> setContentStreams {get; private set;}
 
         public pdfDocument()
         {
             Utils.InitializeCulture();
             fontData = new FontData();
+            setContentStreams = new System.Collections.Generic.HashSet<pdfStream>();
         }
-        public pdfDocument(string inputPath)
+        public pdfDocument(string path)
         {
             Utils.InitializeCulture();
             fontData = new FontData();
-            setFilePath(inputPath);
+            setFilePath(path);
         }
 
-        public bool setFilePath(string inputPath)
+        public bool setFilePath(string path)
         {
+            inputPath = path;
             System.Console.Error.WriteLine("pdfDocument started parsing");
             pdfParser parser = new pdfParser(inputPath); //All the Parsing happens via the Constructor of the pdfParser class
             System.Console.Error.WriteLine("pdfDocument finished parsing");

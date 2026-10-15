@@ -343,6 +343,10 @@ namespace pdfParserByMH
                 }
                 int posBehindMarkedCont_global = markedContStartPos_global + lenMarkedContent + 1; //position behind marekd content in contiguous stream data
 
+                //Just for Debugging
+                // ByteSpan temp = markedContentSpan.Slice(0,lenMarkedContent);
+                // Console.WriteLine(Utils.bytesToString(temp));
+
                 int startStreamIndex = -1;
                 int endStreamIndex = -1;
                 int markedContStartPos_local = -1;

@@ -63,5 +63,49 @@ namespace pdfParserByMH
             else
                 MessageBox.Show("Kein stempelbezogener Content oder Skalierung gefunden.", "Fertig", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
+
+
+        private void writeDecompressed()
+        {
+            string filePath;
+            DocData docdata;
+            try
+            {
+                SinglePDFForm_readFields();
+//-----------
+                docdata = new DocData();
+                foreach(KeyValuePair<DocPropertyType, DocProperty> kvp in dictSinglePDFProperties)
+                {
+                    DocProperty docprop = kvp.Value;
+                    docdata.dictDocProperties[kvp.Key] = docprop.value;
+                }
+//-------------
+                filePath = docdata.filePath;
+                if(!File.Exists(filePath))
+                {
+                    MessageBox.Show("Der angegeben Dateipfad konnte nicht gefunden werden!", "Fehler", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Console.WriteLine("Error in writeDecompressed(): Couldn't find File Path!");
+                    return;
+                }
+            }
+            catch(Exception exc)
+            {
+                MessageBox.Show(string.Format("Fehler beim Auslesen der Parameter und Vorbereitung der Stempel-Rückgängigmachung:\n\n{0}", exc.Message),
+                            "Fehler", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            try
+            {
+                doc.setFilePath(filePath);
+                doc.writeWithDecompContentStreams();
+            }
+            catch(Exception exc)
+            {
+                MessageBox.Show(string.Format("WriteDecompressed ist fehlgeschlagen!\nEs gab folgenden Fehler bei der Behandlung:\n\n{1}", Path.GetFileName(filePath), exc.Message),
+                                "Fehler", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+        }
     }
 }

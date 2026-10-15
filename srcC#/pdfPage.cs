@@ -102,20 +102,22 @@ namespace pdfParserByMH
         {
             if(!dictionary.containsKey("/Contents"))
             {
-                lstContents = new System.Collections.Generic.List<pdfStream>();
                 return;
             }
             pdfEntity contentsEntity = dictionary.getResolved("/Contents");
             if(contentsEntity is pdfStream)
             {
                 lstContents.Add((pdfStream)contentsEntity);
+                document.setContentStreams.Add((pdfStream)contentsEntity);
             }
             else if(contentsEntity is pdfArray)
             {
                 pdfArray pdfarr = (pdfArray)contentsEntity;
                 for(int i=0; i < pdfarr.count(); i++)
                 {
-                    lstContents.Add((pdfStream)pdfarr.getResolved(i));
+                    pdfStream stream = (pdfStream)pdfarr.getResolved(i);
+                    lstContents.Add(stream);
+                    document.setContentStreams.Add(stream);
                 }
             }
             else

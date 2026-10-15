@@ -1,4 +1,5 @@
-﻿using System.Runtime.Remoting.Services;
+﻿using System.IO;
+using System.Runtime.Remoting.Services;
 
 namespace pdfParserByMH
 {
@@ -55,29 +56,6 @@ namespace pdfParserByMH
             return lstBytes.ToArray();
         }
 
-        // private byte[] writePDFEntity(pdfEntity entity)  > C# 5
-        // {
-        //     switch(entity)
-        //     {
-        //         case pdfStringEntity strEntity:
-        //             return System.Text.Encoding.ASCII.GetBytes(strEntity.value);
-        //         case pdfInteger num:
-        //             return Utils.numberToASCIIBytes(num.value);
-        //         case pdfReal num:
-        //             return Utils.numberToASCIIBytes(num.value);
-        //         case pdfObjectReference obRef:
-        //             return writePDFObjectReference(obRef);
-        //         case pdfArray arr:
-        //             return writePDFArray(arr);
-        //         case pdfDictionary dict:
-        //             return writePDFDictionary(dict);
-        //         case pdfStream stream:
-        //             return writePDFStream(stream);
-        //         default:
-        //             throw new System.Exception($"Error in pdfDocument.writePDFEntity(): unknown pdfEntityType {entity.GetType()}");
-        //     }
-        // }
-
         private byte[] writePDFEntity(pdfEntity entity)
         {
             if(entity is pdfStringEntity)
@@ -96,6 +74,29 @@ namespace pdfParserByMH
                 return writePDFStream((pdfStream)entity);
             else
                 throw new System.Exception(string.Format("Error in pdfDocument.writePDFEntity(): unknown pdfEntityType {0}", entity.GetType()));
+        }
+
+        private byte[] writePDFEntity_decompContentStreams(pdfEntity entity, pdfDocument document)
+        {
+            if(entity is pdfStream)
+            {
+                pdfStream stream = (pdfStream)entity;
+                System.Collections.Generic.List<byte> lstBytes = new System.Collections.Generic.List<byte>();
+                lstBytes.AddRange(writePDFDictionary(stream.dictionary));
+                lstBytes.AddRange(System.Text.Encoding.ASCII.GetBytes("\nstream"));
+                lstBytes.AddRange(stream.delimiters[0]);    //For streams taken from the original pdf, these will be the original leading ...
+                
+                if(document.setContentStreams.Contains(stream))
+                    lstBytes.AddRange(stream.getUnfilteredData());
+                else
+                    lstBytes.AddRange(stream.data);
+
+                lstBytes.AddRange(stream.delimiters[1]);    //.. and trailing Delimiters.
+                lstBytes.AddRange(System.Text.Encoding.ASCII.GetBytes("endstream"));
+                return lstBytes.ToArray();
+            }
+            else
+                return writePDFEntity(entity);
         }
 
         

@@ -400,6 +400,19 @@ namespace pdfParserByMH
                 progState = ProgramState.UndoStempel;
                 form.Close();
             };
+            // x += undoStempelButton.Size.Width + 100;
+            // Button writeDecompButton = new Button();
+            // SinglePDFForm.Controls.Add(writeDecompButton);
+            // writeDecompButton.Location = new Point(x, y);
+            // writeDecompButton.Size = new Size(100,50);
+            // writeDecompButton.Text = "Decompress";
+            // writeDecompButton.BackColor = ColorTranslator.FromHtml("#C2EAF0");
+            // writeDecompButton.Click += (sender, e) =>
+            // {
+            //     form.DialogResult = DialogResult.OK;
+            //     progState = ProgramState.WriteDecompressed;
+            //     form.Close();
+            // };
             y += undoStempelButton.Size.Height;
             return y;
         }
