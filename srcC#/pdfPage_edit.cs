@@ -191,7 +191,7 @@ namespace pdfParserByMH
                 }
             }
             string tdtjCommand = strBuild.ToString();
-            string fullCommand = string.Format("q\n{0}\n BT \n{1}\n{2}\n{3}\n{4}\n ET \nQ", cmCommand, rgCommand, tfCommand, tlCommand, tdtjCommand);
+            string fullCommand = string.Format("q\n{0}\nBT\n{1}\n{2}\n{3}\n{4}\n ET \nQ", cmCommand, rgCommand, tfCommand, tlCommand, tdtjCommand);
             return fullCommand;
         }
 
@@ -310,7 +310,7 @@ namespace pdfParserByMH
         }
 
 
-        public bool removeHeaderAndFooter_new()  //Never used this Function so far. Dont know if it works correctly
+        public bool removeContentMarkedAsHeaderAndFooter()  //Never used this Function so far. Dont know if it works correctly
         {
             byte[] arrContiguosData = new byte[0];  //data of a streams in this page, glued together
             byte[][] arrDatasets = new byte[0][];   //all individual stream datas in page sequencial order
@@ -396,76 +396,6 @@ namespace pdfParserByMH
 
             }
             return foundMarkedContent;
-        }
-
-        public bool removeHeaderAndFooter()  //Never used this Function so far. Dont know if it works correctly
-        {
-            byte[] arrContiguosData = new byte[0];  //data of a streams in this page, glued together
-            byte[][] arrDatasets = new byte[0][];   //all individual stream datas in page sequencial order
-            getContiguousDataAndDatasetArray(ref arrContiguosData, ref arrDatasets);
-            string fullPageCode = Utils.bytesToString(arrContiguosData);    //represent bytes as Latin1 string for use of regex
-            string pattern = "/HeaderAndFooterByMH\\s+BMC((?!EMC)[\\s\\S])*EMC";
-            System.Text.RegularExpressions.Regex reg = new System.Text.RegularExpressions.Regex(pattern);
-            if(!reg.IsMatch(fullPageCode))
-            {
-                return false;
-            }
-            var matches = reg.Matches(fullPageCode);
-            if(matches.Count > 1)
-                throw new System.Exception(string.Format("Error in pdfPage.undo_Stempeln(): more than one Stempel marker found in page {0}", this.number));
-            int markedContStartPos_global = matches[0].Index;   //starting position of marekd content in contiguous stream data
-            int posBehindMarkedCont_global = markedContStartPos_global + matches[0].Length + 1; //position behind marekd content in contiguous stream data
-            int startStreamIndex = -1;
-            int endStreamIndex = -1;
-            int markedContStartPos_local = -1;
-            int posBehindMarkedCont_local = -1;
-            int lenBeforeMarkedContent = -1;
-            int lenBehindMarkedContent = -1;
-            int offset = 0; //measured how far we move in the contiguous stream data when iterating over individual streams
-            for(int i=0; i<arrDatasets.Length; i++) //Find the individual streams in which the marked content starts and ends
-            {
-                int datasetLen = arrDatasets[i].Length;
-                if((offset +  datasetLen > markedContStartPos_global) && (startStreamIndex == -1))  //check if the marked content starts before this stream's end
-                {                                                                                   //If that is the case, and this is the first such stream, then the marked content starts inside this stream
-                    startStreamIndex = i;
-                    markedContStartPos_local = markedContStartPos_global - offset;
-                    lenBeforeMarkedContent = markedContStartPos_local;
-                }
-                if((offset + datasetLen >= posBehindMarkedCont_global) && (endStreamIndex == -1))   //check if the marked content ends before this stream's end
-                {                                                                                   //If that is the case, and this is the first such stream, then the marked content ends inside this stream
-                    endStreamIndex = i;
-                    posBehindMarkedCont_local = posBehindMarkedCont_global - offset;
-                    lenBehindMarkedContent = datasetLen - posBehindMarkedCont_local;
-                    break;
-                }
-                offset += datasetLen;
-            }
-            if(startStreamIndex == endStreamIndex)  //If the marked content starts and ends within the same stream
-            {
-                byte[] markedStreamData = arrDatasets[startStreamIndex];    //all data of the stream with marked content
-                int markedStreamDataLen = markedStreamData.Length;
-                byte[] newStreamData = new byte[lenBeforeMarkedContent + lenBehindMarkedContent];   //the new stream data shall exclude the marked content, hence include only the data before and after the marked content.
-                System.Array.Copy(markedStreamData,0,newStreamData,0,lenBeforeMarkedContent);       //copy the data before marked content from the original stream data to new stream data.
-                System.Array.Copy(markedStreamData,posBehindMarkedCont_local,newStreamData,lenBeforeMarkedContent,lenBehindMarkedContent);  //copy the data behind the marked content from otiginal stream data to new stream data
-                lstContents[startStreamIndex].setNewData(newStreamData);    //simply replace the old stream data (with marked content) with the new stream data (without marked content)
-                return true;
-            }
-            else
-            {
-                byte[] startStreamData = arrDatasets[startStreamIndex]; //all data of the stream in which marked content starts
-                byte[] endStreamData = arrDatasets[endStreamIndex];     //all data of the stream in which marked content ends
-                byte[] newStartStreamData = new byte[lenBeforeMarkedContent];   //The stream where the marked content starts shall keep only its data before the marked content
-                byte[] newEndStreamData = new byte[lenBehindMarkedContent];     //The stream where the marked content ends shall keep only its data behind the marked content *..
-                System.Array.Copy(startStreamData,0,newStartStreamData,0,lenBeforeMarkedContent);
-                System.Array.Copy(endStreamData,posBehindMarkedCont_local,newEndStreamData,0,lenBehindMarkedContent);
-                lstContents[startStreamIndex].setNewData(newStartStreamData);
-                lstContents[endStreamIndex].setNewData(newEndStreamData);
-                for(int i=startStreamIndex+1; i<endStreamIndex; i++)
-                {
-                    lstContents[i].setNewData(new byte[0]); //*.. and all inbetween streams shall have no data at all, since all their data was purely marked content
-                }
-            }
-            return true;
         }
 
         private void getContiguousDataAndDatasetArray(ref byte[] arrContiguosData, ref byte[][] arrDatasets)
