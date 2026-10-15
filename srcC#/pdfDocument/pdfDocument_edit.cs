@@ -24,7 +24,7 @@ namespace pdfParserByMH
             bool foundMarkedContent = false;
             foreach(pdfPage page in pagesDict.Values)
             {
-                if(page.removeHeaderAndFooter_new())
+                if(page.removeContentMarkedAsHeaderAndFooter())
                     foundMarkedContent = true;
             }
             return foundMarkedContent;
@@ -76,7 +76,7 @@ namespace pdfParserByMH
                     double ty = 0.5*(mediaBox[3] - mediaBox[1]);
                     double vx = tx*(1-scaleFactor);
                     double vy = ty*(1-scaleFactor);
-                    string scaleCommand = string.Format("\n/HeaderAndFooterByMH BMC\nq {0} 0 0 {1} {2} {3} cm\nEMC\n", scaleFactor, scaleFactor, vx, vy);
+                    string scaleCommand = string.Format("\nq /HeaderAndFooterByMH BMC\n {0} 0 0 {1} {2} {3} cm\nEMC\n", scaleFactor, scaleFactor, vx, vy);
 
                     startingStreamObRef = createNewStreamFromUncompressedData(Utils.stringToBytes(scaleCommand)); //... and pack that scaling command into a new starting stream
                     dict_MediaBoxToStreamObRef.Add(mediaBoxTuple, startingStreamObRef); //Add the new mediaBox and corresponding starting stream to the dictionary
