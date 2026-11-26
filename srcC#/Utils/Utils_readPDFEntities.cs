@@ -170,7 +170,7 @@ namespace pdfParserByMH
         //     return !reg.IsMatch(spanString);
         // }
 
-        static public pdfHexString readPDFHexString(ref ByteSpan span)
+        static public pdfHexString readPDFHexString(ref ByteSpan span, bool skipTrailingWhiteSpaces = true)
         {
             skipPDFComment(ref span);
             if(!(span[0] == '<'))
@@ -187,7 +187,8 @@ namespace pdfParserByMH
             i++; //increment one last time for the final '>'
             pdfHexString hexStr = new pdfHexString(Utils.bytesToString(span.Slice(0,i)));
             span = span.Slice(i);
-            skipASCIIWhiteSpaces(ref span);
+            if(skipTrailingWhiteSpaces)
+                skipASCIIWhiteSpaces(ref span);
             return hexStr;
         }
 

@@ -322,9 +322,9 @@ namespace pdfParserByMH
             {
                 return false;
             }
-            var matches = reg.Matches(fullPageCode);
+            System.Text.RegularExpressions.MatchCollection matches = reg.Matches(fullPageCode);
 
-            bool foundMarkedContent = false;
+            bool foundMarkedContent = matches.Count > 0;
             
             foreach(System.Text.RegularExpressions.Match match in matches)
             {
@@ -332,15 +332,7 @@ namespace pdfParserByMH
                 int lenMarkedContent = -1;
                 ByteSpan markedContentSpan = new ByteSpan(arrContiguosData);
                 markedContentSpan = markedContentSpan.Slice(markedContStartPos_global);
-                if(!Utils.readMarkedContentInStream(markedContentSpan, ref lenMarkedContent))
-                {
-                    Console.Error.WriteLine("Note in pdfPage.removeHeaderAndFooter(): found seemingly marked Content that didn't validate!");
-                    continue;
-                }
-                else
-                {
-                    foundMarkedContent = true;
-                }
+                lenMarkedContent = Utils.readMarkedContentInStream(markedContentSpan);
                 int posBehindMarkedCont_global = markedContStartPos_global + lenMarkedContent + 1; //position behind marekd content in contiguous stream data
 
                 //Just for Debugging
@@ -397,7 +389,6 @@ namespace pdfParserByMH
                         lstContents[i].setNewData(new byte[0]); //*.. and all inbetween streams shall have no data at all, since all their data was purely marked content
                     }
                 }
-
             }
             return foundMarkedContent;
         }

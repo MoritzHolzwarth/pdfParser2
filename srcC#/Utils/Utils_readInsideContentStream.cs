@@ -1,49 +1,43 @@
 using System.CodeDom;
 using System.Configuration;
 using System.Security.AccessControl;
+using System.Windows.Forms.Layout;
 
 namespace pdfParserByMH
 {
     public partial class Utils
     {
         
-        public static bool readMarkedContentInStream(ByteSpan span, ref int lenMarkedContent)
+        public static int readMarkedContentInStream(ByteSpan span)
         {
             int len = 0;
             len += skipAndCountASCIIWhiteSpaces(ref span);
 
-            if(span[0] != '/')
-                return false;
             len += readPDFName(ref span, false).value.Length;
             len += skipAndCountASCIIWhiteSpaces(ref span);
-
             if(!spanStartsWithGivenText(span, "BMC"))
-                return false;
+                throw new System.Exception("Error in readMarkedContentInStream(): Expected 'BMC' Token!");
             span = span.Slice(3);
             len += 3;
             len += skipAndCountASCIIWhiteSpaces(ref span);
-            
-            try
+            while(!spanStartsWithGivenText(span, "EMC"))
             {
-                while(!spanStartsWithGivenText(span, "EMC"))
-                {
-                    len += readSteamEntity(ref span);
-                    len += skipAndCountASCIIWhiteSpaces(ref span);
-                }
-            }
-            catch
-            {
-                return false;
+                len += readStreamEntity(ref span);
+                len += skipAndCountASCIIWhiteSpaces(ref span);
             }
             span = span.Slice(3);
             len += 3;
-            lenMarkedContent = len;
-            return true;
+            return len;
+
         }
 
 
-    public static int readSteamEntity(ref ByteSpan span)
+
+    public static int readStreamEntity(ref ByteSpan span)
     {
+        if(span.Length == 0)
+            throw new System.Exception("Error in readStreamEntity(): Reached End of Stream!");
+            
         if(byteIsASCIINumeric(span[0]))
         {
             double num = readASCIIReal(ref span, false);
@@ -56,9 +50,8 @@ namespace pdfParserByMH
         }
         if(span[0] == '(')
         {
-            int len = 0;
             pdfString pdfStr = readStreamString(ref span);
-            len += pdfStr.value.Length;
+            int len = pdfStr.value.Length;
             len += skipAndCountASCIIWhiteSpaces(ref span);
             if(!spanStartsWithGivenText(span, "Tj"))
                 throw new System.Exception("Error in Utils.readStreamEntity(): No 'Tj' Token afer closing ')' in stream-literal-string!");
@@ -68,7 +61,39 @@ namespace pdfParserByMH
                 throw new System.Exception("Error in Utils.readStreamEntity(): Ambiguous Closing of stream-literal-string!");
             return len;
         }
-        string[] arrStreamTokens = new string[] {"q", "Q", "BT", "ET", "cm", "rg", "Tf", "TL", "Td", "Tj"};
+        if(span[0] == '<')
+        {
+            pdfHexString pdfHexStr = readPDFHexString(ref span, false);
+            int len = pdfHexStr.value.Length;
+            return len;
+        }
+        if(span[0] == '[')
+        {
+            span = span.Slice(1);
+            int len = 1;
+            len += skipAndCountASCIIWhiteSpaces(ref span);
+            while(span[0] != ']')
+            {
+                if(span[0] == '(')  //Treat it extra, not via readStreamEntity like next line, because that would expect String to be followed by Tj
+                    len += readStreamString(ref span).value.Length;
+                else if (span[0] == '<' || byteIsASCIINumeric(span[0]))
+                    len += readStreamEntity(ref span);
+                else
+                    throw new System.Exception(string.Format("Error in Utils.readStreamEntity(): Unexpected Element in assumed TJ-Array, starting with {0}!", (char)span[0]));
+                
+                len += skipAndCountASCIIWhiteSpaces(ref span);
+            }
+            span = span.Slice(1);   // for the closing ]
+            len += 1;
+            len += skipAndCountASCIIWhiteSpaces(ref span);
+            if(!spanStartsWithGivenText(span, "TJ"))
+                throw new System.Exception("Error in Utils.readStreamEntity(): Array, assumed in BT-ET-Block, not followed by TJ!");
+            span = span.Slice(2);
+            len += 2;
+            return len;
+        }
+
+        string[] arrStreamTokens = new string[] {"q", "Q", "BT", "ET", "cm", "rg", "gs", "g", "re", "n", "W", "W*", "TL", "TD", "Td", "Tc", "Tw", "Tz", "Tr", "Tf", "Ts", "Tm"};
         foreach(string token in arrStreamTokens)
         {
             if(spanStartsWithGivenText(span, token))
